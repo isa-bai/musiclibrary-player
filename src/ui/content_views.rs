@@ -1,5 +1,5 @@
 
-use iced::{gradient, padding, widget::{self, button, column, container, horizontal_space, image, lazy, row, scrollable, text, tooltip, Button, Column}, Alignment::Center, Element, Length::Fill, Theme};
+use iced::{gradient, padding, widget::{self, button, column, container, horizontal_space, image, lazy, pick_list, row, scrollable, text, tooltip, Button, Column}, Alignment::Center, Element, Length::Fill, Theme};
 use super::app::{App, Message, IMG_SIZE};
 
 
@@ -186,13 +186,17 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
 }
 
 
-pub fn settings_page(_app: &App) -> Element<'_, Message> {
-
-
-    container("many settings !")
+pub fn settings_page(app: &App) -> Element<'_, Message> {
+    container(pick_list(Theme::ALL, Some(&app.theme), Message::ThemeChanged)
+                .width(Fill)
+                .text_size(14))
     .width(Fill)
     .height(Fill)
     .padding(10).into()
+    // container("many settings !")
+    // .width(Fill)
+    // .height(Fill)
+    // .padding(10).into()
 }
 
 

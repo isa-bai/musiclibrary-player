@@ -6,14 +6,14 @@ use iced::time::{self, milliseconds};
 use ahash::AHashMap;
 use iced::widget::{lazy, svg, Column};
 use iced::{
-    gradient, widget::{button, column, container, horizontal_space, image, pick_list, row, scrollable, slider, slider::HandleShape, text, Button}, window::Settings, Alignment, Border, Center, Element, Length::{self, Fill}, Size, Theme};
+    gradient, widget::{button, column, container, horizontal_space, image, row, scrollable, slider, slider::HandleShape, text, Button}, window::Settings, Alignment, Border, Center, Element, Length::{self, Fill}, Size, Theme};
 
 use rodio::decoder::DecoderBuilder;
 use rodio::{source::EmptyCallback, OutputStream, Sink};
 use iced::futures::StreamExt;
 
 use iced::futures::Stream;
-use iced::{stream, Subscription};
+use iced::{stream, Subscription, Task};
 
 use crate::musiclib::music_library::{self, AlbumKey, MusicLibrary, Song};
 use super::icons::Icon;
@@ -24,12 +24,6 @@ const SIDEBAR_SIZE: f32 = 80.;
 //height and width of album artwork stored in memory
 pub const IMG_SIZE: u32 = 120;
 
-fn sidebar_item(theme: &Theme) -> container::Style {
-    let palette = theme.extended_palette();
-    let mut style = container::Style::default();
-    style.border.radius = 15.0.into();
-    style
-}
 
 fn sidebar_button_style(theme: &Theme, status: button::Status) -> button::Style {
     let palette = theme.extended_palette();
@@ -118,6 +112,17 @@ fn sidebar_button(txt: &str, msg: ContentView) -> Button<'_, Message> {
     .style(sidebar_button_style)
     .on_press(Message::ContentChanged(msg))
     .into()
+}
+
+fn song_scroll_style(theme: &Theme, status: scrollable::Status) -> scrollable::Style {
+    let palette = theme.extended_palette();
+    let mut style = scrollable::default(theme, status);
+    style.vertical_rail.background = Some(palette.background.weakest.color.into());
+    //style.horizontal_rail.scroller
+    //style.vertical_rail.scroller.border.radius = 0.into();
+    //style.vertical_rail.border.radius = 0.into();
+
+    style
 }
 
 
@@ -243,12 +248,14 @@ pub struct Player {
 
 pub struct App {
     current_view: ContentView,
-    theme: Theme,
+    pub theme: Theme,
     pub library: MusicLibrary,
     pub imghandles: AHashMap<AlbumKey, image::Handle>,
     pub player: Player,
     pub version: u32,
+    pub durtick: u32,
     pub sender: Option<Sender<Message>>,
+    song_text_id: scrollable::Id,
 }
 
 
@@ -260,7 +267,6 @@ impl App {
         let sink = rodio::Sink::connect_new(stream_handle.mixer());
         sink.pause();
         //let (queue, queue_handle) = queue::queue(true);
-
         //pull all the album art out of the lib structure, clone, then delete
         let mut ih = AHashMap::new();
         for (key, info) in lib.get_all_albums().iter_mut() {
@@ -298,7 +304,9 @@ impl App {
             },
             imghandles: ih,
             version: 0,
-            sender: None
+            durtick: 0,
+            sender: None,
+            song_text_id: scrollable::Id::unique(),
         }
     }
 
@@ -318,7 +326,7 @@ impl App {
         }
     }
 
-    fn update(&mut self, message: Message) {
+    fn update(&mut self, message: Message) -> Task<Message> {
 
         match message {
             Message::BackgroundWorker(sender) => {
@@ -394,7 +402,7 @@ impl App {
                     },
                     ControlMsg::UpdateDuration => {
                         if let Some(song) = &self.player.current_song {
-
+                            self.durtick += 1;
                             let cur = self.player.sink.get_pos().as_secs_f32();
                             let dur = song.duration.as_secs_f32();
                             self.player.progress = cur / dur;                                
@@ -406,8 +414,16 @@ impl App {
                                 self.add_song_to_sink(self.player.song_queue.front().unwrap().clone());
                                 self.player.next_appended = true;
                             }
+                            let pos = ((self.durtick % 37) as f32 * 0.05) - 0.4;
+                            return scrollable::snap_to::<Message>(
+                                self.song_text_id.clone(),
+                                scrollable::RelativeOffset {
+                                    x: pos,
+                                    y: 0.
+                                }
+                            )
                         }
-                             
+
                         //println!("event");
                     }
                     _ => {}
@@ -434,6 +450,7 @@ impl App {
                 }
             }
         }
+        Task::none()
     }
     
     fn view(&self) -> Element<'_, Message> {
@@ -445,10 +462,6 @@ impl App {
             sidebar_button("Queue", ContentView::Queue),
             sidebar_button("Albums", ContentView::Albums),
             sidebar_button("Artists", ContentView::Artists),
-            container(pick_list(Theme::ALL, Some(&self.theme), Message::ThemeChanged)
-                .width(Fill)
-                .text_size(14)
-            ),
             sidebar_button("Settings", ContentView::Settings)
             .height(30)
             ])
@@ -520,14 +533,31 @@ impl App {
         ].align_y(Center).height(Length::Fill).spacing(4);
         
 
-
+        
         let song_text: Column<'_, Message>;
         if self.player.current_song.is_some() {       
             song_text = column![
                 scrollable(text(self.player.current_song.as_ref().unwrap().title.clone())
-                    .size(16).align_x(Alignment::Start).height(Length::Shrink).wrapping(text::Wrapping::None)).width(210).horizontal(),
-                text(self.player.current_song.as_ref().unwrap().artists[0].clone())
-                    .size(14).align_x(Alignment::Start).height(Length::Fill).height(Length::Fill),
+                    .size(16).align_x(Alignment::Start).height(Length::Shrink).wrapping(text::Wrapping::None))
+                    .id(self.song_text_id.clone())
+                    .style(song_scroll_style).width(210)
+                    // .horizontal(),
+                    .direction(scrollable::Direction::Horizontal(
+                        scrollable::Scrollbar::new()
+                            .width(0)
+                            .scroller_width(0)
+                    )),
+                    //self.player.current_song.as_ref().unwrap().artists[0].clone()
+                    scrollable(text(self.player.current_song.as_ref().unwrap().artists.join(" / "))
+                    .size(14).align_x(Alignment::Start))
+                    .id(self.song_text_id.clone())
+                    .style(song_scroll_style).width(210)
+                    // .horizontal(),
+                    .direction(scrollable::Direction::Horizontal(
+                        scrollable::Scrollbar::new()
+                            .width(0)
+                            .scroller_width(0)
+                    )),
             ].height(Length::Fill).width(210).spacing(0);
         }
         else {
@@ -589,6 +619,7 @@ impl App {
     //this is always called when a song is to be added to the sink, so this handles next song logic
     fn get_next_song(&mut self) {
         self.version += 1;
+        self.durtick = 0;
         //if next song already appended, update info and return
         if self.player.next_appended {
             self.player.next_appended = false;
@@ -644,7 +675,7 @@ impl App {
                     })
                 }
             }
-        };
+        }; 
         
         fn playback_updater() -> impl Stream<Item = Message> {
             stream::channel(100, async |mut output| {
