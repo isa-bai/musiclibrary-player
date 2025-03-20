@@ -1,4 +1,4 @@
-use iced::{gradient, padding, widget::{button, column, container, horizontal_space, image, lazy, pick_list, row, scrollable, svg, text, text::{LineHeight, Wrapping}, tooltip, Button, Column, Container}, Alignment, Element, Length::{self, Fill, FillPortion, Shrink}, Theme};
+use iced::{gradient, padding, widget::{button, column, container, horizontal_space, image, lazy, pick_list, row, scrollable, svg, text, text::{LineHeight, Wrapping}, tooltip, Button, Column}, Alignment, Element, Length::{self, Fill, FillPortion, Shrink}, Theme};
 use super::{app::{App, Message, IMG_SIZE}, icons::Icon};
 
 
