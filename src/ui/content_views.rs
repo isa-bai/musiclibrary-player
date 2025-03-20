@@ -99,12 +99,13 @@ pub fn artist_page(app: &App) -> Element<'_, Message> {
 pub fn queue_page(app: &App) -> Element<'_, Message> {
 
     let clearbtn: Button<'_, Message> = match app.player.next_appended {
-        false => button("Clear").on_press(Message::ClearQueue),
-        true => button("Clear")
+        false => button("Clear").height(36).on_press(Message::ClearQueue),
+        true => button("Clear").height(36)
     };
     let header = container(
         row![
-            button("None"),
+            button("None")
+            .height(36),
             horizontal_space(),
             text("Queue")
                 .width(Fill)
@@ -118,19 +119,19 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
         ]
     ).width(Fill).height(36).style(header_style);
     let mut l: Column<'_, Message> = Column::new();
-    if let Some(cur_song) = &app.player.current_song {
-        //button(">"),
-        l = l.push(container(text(format!("{:02}: {} - {}    {}", cur_song.track_number, cur_song.artists[0], cur_song.title, cur_song.format_duration())))
-        .style(container::primary)
-        .width(Fill)
-        .padding(5));
+    // if let Some(cur_song) = &app.player.current_song {
+    //     //button(">"),
+    //     l = l.push(container(text(format!("{:02}: {} - {}    {}", cur_song.track_number, cur_song.artists[0], cur_song.title, cur_song.format_duration())))
+    //     .style(container::primary)
+    //     .width(Fill)
+    //     .padding(5));
 
-    }
+    // }
     for (i, song) in app.player.song_queue.iter().enumerate(){
         let item = row![
             //button(">"),
             container(text(format!("{:02}: {} - {}    {}", &song.track_number, &song.artists[0], &song.title, &song.format_duration())))
-            .style(move |t|artist_style(t, i))
+            .style(move |t|queue_style(t, i, app.player.queue_pos))
             .width(Fill)
             .padding(5)
         ];
@@ -288,6 +289,35 @@ fn artist_style(theme: &Theme, alt: usize) -> container::Style {
     style
 }
 
+fn queue_style(theme: &Theme, alt: usize, pos: usize) -> container::Style {
+    let palette = theme.extended_palette();
+    let mut style = container::Style::default();
+    match alt {
+        alt if alt == pos => {
+            style.background = Some(palette.primary.base.color.into());
+            style.text_color = Some(palette.primary.base.text);
+        }
+        _ => {
+            if alt % 2 == 0 {
+                style.background = Some(palette.background.weak.color.into());
+                style.text_color = Some(palette.background.weak.text);
+            }
+            else {
+                //let c1 = palette.background.base.color.into_rgba8();
+                //let c2 = palette.background.weak.color.into_rgba8();
+                //c2[0]+c1[0]) >> 1, (c2[1]+c1[1]) >> 1, (c2[2]+c1[2]) >> 1
+                style.background = Some(palette.background.base.color.into());
+                style.text_color = Some(palette.background.base.text);
+            }           
+        }
+        
+    }
+    style.border.color = palette.background.strong.color;
+    style.border.width = 0.5;
+    style
+}
+
+
 fn scrollable_style(theme: &Theme, status: scrollable::Status) -> scrollable::Style {
     let palette = theme.extended_palette();
     let mut style = scrollable::default(theme, status);
@@ -299,7 +329,6 @@ fn scrollable_style(theme: &Theme, status: scrollable::Status) -> scrollable::St
 }
 
 fn header_button(icon: Icon, txt: String, msg: CollectionView) -> Button<'static, Message> {
-
 
     button(container(row![
         svg(svg::Handle::from(icon.icon_data()))
@@ -323,20 +352,35 @@ fn header_button(icon: Icon, txt: String, msg: CollectionView) -> Button<'static
 
 fn header_button_style(theme: &Theme, status: button::Status) -> button::Style {
     let palette = theme.extended_palette();
-    let mut style = button::secondary(theme, status);
-    // style.background = Some(palette.background.weak.color.into());
+    let mut style = button::Style::default();
+    
     //style.text_color = palette.background.weak.text;
-    style.border.width = 2.;
-    style.border.color = palette.secondary.strong.color;
+    //style.border.width = 2.;
+    style.border.color = palette.background.strong.color;
     style.border.radius = 6.0.into();
     // style.border.color = palette.background.strong.color;
-
+    match status {
+        button::Status::Active => {
+            style.background = Some(palette.background.base.color.into());
+            style.text_color = palette.background.base.text;
+        },
+        button::Status::Pressed => {
+            style.background = Some(palette.background.strong.color.into());
+            style.text_color = palette.background.strong.text;
+        },
+        button::Status::Hovered => {
+            style.background = Some(palette.background.weak.color.into());
+            style.border.width = 2.;
+            style.text_color = palette.background.weak.text;
+        },
+        _ => {}
+    }
     style
 }
 
 fn header_svg_style(theme: &Theme, _status: svg::Status) -> svg::Style {
     let palette = theme.extended_palette();
     let mut style = svg::Style::default();
-    style.color = Some(palette.secondary.base.text.into());
+    style.color = Some(palette.background.base.text.into());
     style
 }

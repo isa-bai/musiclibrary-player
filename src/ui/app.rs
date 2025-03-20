@@ -238,11 +238,13 @@ pub struct Player {
     _stream_handle: OutputStream,
     sink: Sink,
     pub song_queue: VecDeque<music_library::Song>,
+    pub queue_pos: usize,
     volume: f32,
     progress: f32,
     sliding: bool,
     pub current_song: Option<Song>,
     pub next_appended: bool,
+    last_skipped: bool,
     state: PlayerState,
     loop_state: LoopState,
     shuffle_state: ShuffleState
@@ -290,7 +292,7 @@ impl App {
         Self {
             current_view: ContentView::Queue,
             collection_view: CollectionView::Albums,
-            theme: Theme::CatppuccinMacchiato,
+            theme: Theme::CatppuccinMocha,
             library: lib,
             player: Player {
                 _stream_handle: stream_handle,
@@ -299,7 +301,9 @@ impl App {
                 progress: 0.,
                 sliding: false,
                 song_queue: VecDeque::new(),
+                queue_pos: 0,
                 current_song: None,
+                last_skipped: false,
                 next_appended: false,
                 state: PlayerState::Idle,
                 loop_state: LoopState::None,
@@ -360,20 +364,15 @@ impl App {
 
                     },
                     ControlMsg::Stop => {
-                        self.player.sink.stop();
-                        self.player.sink.pause();
-                        self.player.current_song = None;
-                        self.player.song_queue.clear();
-                        self.player.next_appended = false;
-                        if self.player.state == PlayerState::Active {self.player.state = PlayerState::Idle};
-                        self.player.progress = 0.;
-                        self.version -= 1;
+                        self.stop_player();
                     },
                     ControlMsg::Forward => {
+                        self.player.last_skipped = true;
                         self.player.sink.skip_one();
                         if !self.player.sink.empty() {self.player.sink.play();}
                     },
                     ControlMsg::Back => {
+                        //if next song appended already, clear out sink and put current song back in
                         if self.player.next_appended {
                             if let Ok(file) = std::fs::File::open(&self.player.current_song.as_ref().unwrap().file_path) {
                                 self.player.sink.stop();
@@ -388,8 +387,21 @@ impl App {
                                 //might be courteous to return the user to where they were before trying to seek
                             }
                             self.player.next_appended = false;
+                            return Task::none();
                         }
-                        self.seek(0.);
+                        //if more than 4 seconds into song or no previous song go to start, else go last song
+                        if  self.player.sink.get_pos().as_secs_f32() > 4. ||
+                            self.player.queue_pos == 0 ||
+                            self.player.song_queue.get(self.player.queue_pos - 1).is_none() 
+                        {
+                            self.seek(0.);
+                        } else {
+                            self.player.sink.stop();
+                            self.player.queue_pos -= 1;
+                            //append previous song.
+                            self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
+                            self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());;
+                        }
                     },
                     ControlMsg::Sliding(val) => {
                         self.player.sliding = true;
@@ -416,8 +428,8 @@ impl App {
                             if dur - cur < 0.4 &&
                                 !self.player.next_appended &&
                                 self.player.loop_state != LoopState::Song &&
-                                !self.player.song_queue.is_empty() {
-                                self.add_song_to_sink(self.player.song_queue.front().unwrap().clone());
+                                self.player.song_queue.get(self.player.queue_pos + 1).is_some() {
+                                self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos + 1).unwrap().clone());
                                 self.player.next_appended = true;
                             }
                             let pos = ((self.durtick % 37) as f32 * 0.05) - 0.4;
@@ -640,6 +652,17 @@ impl App {
 
     }
 
+    fn stop_player(&mut self) {
+        self.player.sink.stop();
+        self.player.sink.pause();
+        self.player.current_song = None;
+        //if clear_queue {self.player.song_queue.clear();}
+        self.player.next_appended = false;
+        if self.player.state == PlayerState::Active {self.player.state = PlayerState::Idle};
+        self.player.progress = 0.;
+        self.player.queue_pos = 0;
+        self.version -= 1;
+    }
     //this is always called when a song is to be added to the sink, so this handles next song logic
     fn get_next_song(&mut self) {
         self.version += 1;
@@ -648,25 +671,48 @@ impl App {
         //if next song already appended, update info and return
         if self.player.next_appended {
             self.player.next_appended = false;
-            self.player.current_song = Some(self.player.song_queue.pop_front().unwrap());
+            self.player.queue_pos += 1;
+            //unwrap should be fine because of the check in UpdateDuration message which is the only way to get here
+            self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
+            self.player.last_skipped = false;
             return;
         }
 
-        if self.player.loop_state == LoopState::Song && self.player.current_song.is_some() {
+        //if single looping and user did not skip, just replay current song, do nothing else
+        if self.player.loop_state == LoopState::Song && self.player.current_song.is_some() && !self.player.last_skipped {
             self.add_song_to_sink(self.player.current_song.as_ref().unwrap().clone());
             return;
         }
+        //in any other case last_skipped is irrelevant
+        self.player.last_skipped = false;
 
-        if !self.player.song_queue.is_empty() {
-            self.add_song_to_sink(self.player.song_queue.front().unwrap().clone());
-            self.player.current_song = Some(self.player.song_queue.pop_front().unwrap());
+        //if no song is in player, and there is a song at the front of the queue, play first song
+        //currently shouldnt be possible for first index of song_queue to be none here but better to check anyway
+        if self.player.current_song.is_none() && self.player.song_queue.get(0).is_some() {
+            self.player.queue_pos = 0;
+            self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
+            self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
+            return;
+        }
+
+        // todo - if nothing past queue_pos and check for looping all
+        if self.player.song_queue.get(self.player.queue_pos + 1).is_some() {
+            //if next song exists, add it
+            self.player.queue_pos += 1;
+            self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
+            self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
 
         }
         else {
-            self.player.current_song = None;
-            self.player.sink.pause();
-            self.player.progress = 0.;
-            self.player.state = PlayerState::Idle;
+            //otherwise check if looping is all, and if so, go to start
+            if self.player.loop_state == LoopState::All {
+                self.player.queue_pos = 0;
+                self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
+                self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
+            } else {
+                //otherwise stop player without clearing queue.
+                self.stop_player();
+            }
         }
     }
 
