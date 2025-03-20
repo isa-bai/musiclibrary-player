@@ -116,19 +116,19 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
 
     let fields =
         container(row![
-            container(text("#").wrapping(Wrapping::None)).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos))
+            container(text("#").wrapping(Wrapping::None)).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos, app.player.queue_cleared))
             .width(FillPortion(30))
             .clip(true)
             .padding(padding::Padding {top: 0.,right: 4.,bottom: 0.,left: 4.,}),
-            container(text("Title").wrapping(Wrapping::None)).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos))
+            container(text("Title").wrapping(Wrapping::None)).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos, app.player.queue_cleared))
             .width(FillPortion(260))
             .clip(true)
             .padding(padding::Padding {top: 0.,right: 4.,bottom: 0.,left: 4.,}),
-            container(text("Artist").wrapping(Wrapping::None)).style(container::bordered_box).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos))
+            container(text("Artist").wrapping(Wrapping::None)).style(container::bordered_box).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos, app.player.queue_cleared))
             .width(FillPortion(200))
             .clip(true)
             .padding(padding::Padding {top: 0.,right: 4.,bottom: 0.,left: 4.,}),
-            container(text("Length").wrapping(Wrapping::None)).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos))
+            container(text("Length").wrapping(Wrapping::None)).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos, app.player.queue_cleared))
             .width(FillPortion(60))
             .clip(true)
             .padding(padding::Padding {top: 0.,right: 4.,bottom: 0.,left: 4.,}),
@@ -143,7 +143,7 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
     for (i, song) in app.player.song_queue.iter().enumerate(){
         let item = row![
 
-        container(text(format!("{:02}", i + 1)).wrapping(Wrapping::None)).style(move |t|queue_style(t, i, app.player.queue_pos))
+        container(text(format!("{:02}", i + 1)).wrapping(Wrapping::None)).style(move |t|queue_style(t, i, app.player.queue_pos, app.player.queue_cleared))
         .width(FillPortion(30))
         .clip(true)
         .padding(padding::Padding {
@@ -152,7 +152,7 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
             bottom: 0.,
             left: 4.,
         }),
-        container(text(song.title.clone()).wrapping(Wrapping::None)).style(move |t|queue_style(t, i, app.player.queue_pos))
+        container(text(song.title.clone()).wrapping(Wrapping::None)).style(move |t|queue_style(t, i, app.player.queue_pos, app.player.queue_cleared))
         .width(FillPortion(260))
         .clip(true)
         .padding(padding::Padding {
@@ -161,7 +161,7 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
             bottom: 0.,
             left: 4.,
         }),
-        container(text(song.artists.join(" / ")).wrapping(Wrapping::None)).style(container::bordered_box).style(move |t|queue_style(t, i, app.player.queue_pos))
+        container(text(song.artists.join(" / ")).wrapping(Wrapping::None)).style(container::bordered_box).style(move |t|queue_style(t, i, app.player.queue_pos, app.player.queue_cleared))
         .width(FillPortion(200))
         .clip(true)
         .padding(padding::Padding {
@@ -170,7 +170,7 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
             bottom: 0.,
             left: 4.,
         }),
-        container(text(song.format_duration()).wrapping(Wrapping::None)).style(move |t|queue_style(t, i, app.player.queue_pos))
+        container(text(song.format_duration()).wrapping(Wrapping::None)).style(move |t|queue_style(t, i, app.player.queue_pos, app.player.queue_cleared))
         .width(FillPortion(60))
         .clip(true)
         .padding(padding::Padding {
@@ -332,11 +332,11 @@ fn artist_style(theme: &Theme, alt: usize) -> container::Style {
     style
 }
 
-fn queue_style(theme: &Theme, alt: usize, pos: usize) -> container::Style {
+fn queue_style(theme: &Theme, alt: usize, pos: usize, queue_cleared: bool) -> container::Style {
     let palette = theme.extended_palette();
     let mut style = container::Style::default();
     match alt {
-        alt if alt == pos => {
+        alt if alt == pos && !queue_cleared => {
             style.background = Some(palette.primary.base.color.into());
             style.text_color = Some(palette.primary.base.text);
         }

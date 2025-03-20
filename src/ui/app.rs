@@ -245,7 +245,7 @@ pub struct Player {
     pub current_song: Option<Song>,
     pub next_appended: bool,
     last_skipped: bool,
-    queue_cleared: bool,
+    pub queue_cleared: bool,
     state: PlayerState,
     loop_state: LoopState,
     shuffle_state: ShuffleState
@@ -430,6 +430,7 @@ impl App {
                             if dur - cur < 0.4 &&
                                 !self.player.next_appended &&
                                 self.player.loop_state != LoopState::Song &&
+                                !self.player.queue_cleared &&
                                 self.player.song_queue.get(self.player.queue_pos + 1).is_some() {
                                 self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos + 1).unwrap().clone());
                                 self.player.next_appended = true;
