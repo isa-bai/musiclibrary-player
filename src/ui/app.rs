@@ -4,7 +4,6 @@ use iced::futures::SinkExt;
 use iced::time::{self, milliseconds};
 
 use ahash::AHashMap;
-use iced::widget::text::LineHeight;
 use iced::widget::{lazy, svg, Column};
 use iced::{
     gradient, widget::{button, column, container, horizontal_space, image, row, scrollable, slider, slider::HandleShape, text, Button}, window::Settings, Alignment, Border, Center, Element, Length::{self, Fill}, Size, Theme};
@@ -14,7 +13,7 @@ use rodio::{source::EmptyCallback, OutputStream, Sink};
 use iced::futures::StreamExt;
 
 use iced::futures::Stream;
-use iced::{stream, Subscription, Task};
+use iced::{stream, window, Subscription, Task};
 
 use crate::musiclib::music_library::{self, AlbumKey, MusicLibrary, Song};
 use super::icons::Icon;
@@ -401,7 +400,7 @@ impl App {
                             self.player.queue_pos -= 1;
                             //append previous song.
                             self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
-                            self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());;
+                            self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
                         }
                     },
                     ControlMsg::Sliding(val) => {
@@ -456,12 +455,15 @@ impl App {
                             LoopState::Song => self.player.loop_state = LoopState::None
                         }
                     },
-                    _ => {}
+                    //_ => {}
                 }
             }
             Message::ClearQueue => {
                 self.version = 0;
-                if !self.player.next_appended {self.player.song_queue.clear();}
+                if !self.player.next_appended {
+                    self.player.queue_pos = 0;
+                    self.player.song_queue.clear();
+                }
             },
             Message::SongFinished => {
                 //println!("song finished");
@@ -707,7 +709,7 @@ impl App {
         }
         else {
             //otherwise check if looping is all, and if so, go to start
-            if self.player.loop_state == LoopState::All {
+            if self.player.loop_state == LoopState::All && self.player.song_queue.get(0).is_some() {
                 self.player.queue_pos = 0;
                 self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
                 self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
@@ -871,7 +873,7 @@ pub fn run() -> iced::Result {
     let mut window_settings = Settings::default();
     window_settings.size = Size::new(640., 380.);
     window_settings.min_size = Some(Size::new(640., 380.));
-
+    window_settings.icon = Some(window::icon::from_file_data(include_bytes!("../../assets/icon.png"), None).unwrap());
     iced::application(App::title, App::update, App::view)
     .theme(App::theme)
     .window(window_settings)
