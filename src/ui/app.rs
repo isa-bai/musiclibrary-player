@@ -4,6 +4,7 @@ use iced::futures::SinkExt;
 use iced::time::{self, milliseconds};
 
 use ahash::AHashMap;
+use iced::widget::text::LineHeight;
 use iced::widget::{lazy, svg, Column};
 use iced::{
     gradient, widget::{button, column, container, horizontal_space, image, row, scrollable, slider, slider::HandleShape, text, Button}, window::Settings, Alignment, Border, Center, Element, Length::{self, Fill}, Size, Theme};
@@ -159,7 +160,7 @@ pub enum ButtonType {
     Svg(Icon)
 }
 
-fn top_control_button(kind: ButtonType, msg: ControlMsg) -> Button<'static, Message> {
+fn top_control_button(kind: ButtonType, msg: &ControlMsg) -> Button<'_, Message> {
     match kind {
         ButtonType::Text(txt) => {
             button(text(txt)
@@ -169,7 +170,7 @@ fn top_control_button(kind: ButtonType, msg: ControlMsg) -> Button<'static, Mess
             .height(Length::Fixed(36.))
             .width(Length::Fixed(36.))
             .style(control_button_style)
-            .on_press(Message::ControlChange(msg))
+            .on_press(Message::ControlChange(msg.clone()))
             .into()
         },
         ButtonType::Svg(icon) => {
@@ -180,7 +181,7 @@ fn top_control_button(kind: ButtonType, msg: ControlMsg) -> Button<'static, Mess
             ).height(Length::Fixed(36.))
             .width(Length::Fixed(36.))
             .style(control_button_style)
-            .on_press(Message::ControlChange(msg))
+            .on_press(Message::ControlChange(msg.clone()))
             .into()
         }
     }
@@ -539,10 +540,10 @@ impl App {
         // CONTROL BUTTONS
 
         let control_buttons = row![
-            top_control_button(ButtonType::Svg(Icon::Back), ControlMsg::Back),
-            top_control_button(ButtonType::Svg(toggle_data), ControlMsg::TogglePlayback),
-            top_control_button(ButtonType::Svg(Icon::Stop), ControlMsg::Stop),
-            top_control_button(ButtonType::Svg(Icon::Forward), ControlMsg::Forward),
+            top_control_button(ButtonType::Svg(Icon::Back), &ControlMsg::Back),
+            top_control_button(ButtonType::Svg(toggle_data), &ControlMsg::TogglePlayback),
+            top_control_button(ButtonType::Svg(Icon::Stop), &ControlMsg::Stop),
+            top_control_button(ButtonType::Svg(Icon::Forward), &ControlMsg::Forward),
         ].spacing(4).height(Fill).align_y(Center);
         let control_sliders: row::Row<'_, Message> = row![
             text(current_pos).size(14),
@@ -574,7 +575,8 @@ impl App {
         if self.player.current_song.is_some() {       
             song_text = column![
                 scrollable(text(self.player.current_song.as_ref().unwrap().title.clone())
-                    .size(16).align_x(Alignment::Start).height(Length::Shrink).wrapping(text::Wrapping::None))
+                    .size(16).align_x(Alignment::Start).height(Length::Shrink)
+                    .line_height(LineHeight::Relative(1.)).wrapping(text::Wrapping::None))
                     .id(self.song_text_id.clone())
                     .style(song_scroll_style).width(210)
                     // .horizontal(),
@@ -585,7 +587,7 @@ impl App {
                     )),
                     //self.player.current_song.as_ref().unwrap().artists[0].clone()
                     scrollable(text(self.player.current_song.as_ref().unwrap().artists.join(" / "))
-                    .size(14).align_x(Alignment::Start))
+                    .size(14).align_x(Alignment::Start).wrapping(text::Wrapping::None))
                     .id(self.song_text_id.clone())
                     .style(song_scroll_style).width(210)
                     // .horizontal(),
@@ -797,7 +799,7 @@ impl App {
     }
 } 
     
-fn lower_control_button(&self, kind: ButtonType, msg: ControlMsg) -> Button<'static, Message> {
+fn lower_control_button(&self, kind: ButtonType, msg: ControlMsg) -> Button<'_, Message> {
     let is_on;
     match msg {
         ControlMsg::LoopingChanged => {

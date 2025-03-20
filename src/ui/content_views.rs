@@ -1,7 +1,4 @@
-
-use std::net::Shutdown;
-
-use iced::{gradient, padding, widget::{button, column, container, horizontal_space, image, lazy, pick_list, row, scrollable, svg, text, tooltip, Button, Column}, Alignment, Element, Length::{self, Fill, Shrink}, Theme};
+use iced::{gradient, padding, widget::{button, column, container, horizontal_space, image, lazy, pick_list, row, scrollable, svg, text, text::{LineHeight, Wrapping}, tooltip, Button, Column, Container}, Alignment, Element, Length::{self, Fill, FillPortion, Shrink}, Theme};
 use super::{app::{App, Message, IMG_SIZE}, icons::Icon};
 
 
@@ -114,26 +111,86 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
                 .size(24),
             horizontal_space(),
             clearbtn
-
-
         ]
     ).width(Fill).height(36).style(header_style);
-    let mut l: Column<'_, Message> = Column::new();
-    // if let Some(cur_song) = &app.player.current_song {
-    //     //button(">"),
-    //     l = l.push(container(text(format!("{:02}: {} - {}    {}", cur_song.track_number, cur_song.artists[0], cur_song.title, cur_song.format_duration())))
-    //     .style(container::primary)
-    //     .width(Fill)
-    //     .padding(5));
 
-    // }
+    let fields =
+        container(row![
+            container(text("#").wrapping(Wrapping::None)).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos))
+            .width(FillPortion(30))
+            .clip(true)
+            .padding(padding::Padding {top: 0.,right: 4.,bottom: 0.,left: 4.,}),
+            container(text("Title").wrapping(Wrapping::None)).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos))
+            .width(FillPortion(260))
+            .clip(true)
+            .padding(padding::Padding {top: 0.,right: 4.,bottom: 0.,left: 4.,}),
+            container(text("Artist").wrapping(Wrapping::None)).style(container::bordered_box).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos))
+            .width(FillPortion(200))
+            .clip(true)
+            .padding(padding::Padding {top: 0.,right: 4.,bottom: 0.,left: 4.,}),
+            container(text("Length").wrapping(Wrapping::None)).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos))
+            .width(FillPortion(60))
+            .clip(true)
+            .padding(padding::Padding {top: 0.,right: 4.,bottom: 0.,left: 4.,}),
+        ]
+    );
+
+
+
+    let mut l: Column<'_, Message> = Column::new();
+
+    
     for (i, song) in app.player.song_queue.iter().enumerate(){
         let item = row![
+
+        container(text(format!("{:02}", i + 1)).wrapping(Wrapping::None)).style(move |t|queue_style(t, i, app.player.queue_pos))
+        .width(FillPortion(30))
+        .clip(true)
+        .padding(padding::Padding {
+            top: 0.,
+            right: 4.,
+            bottom: 0.,
+            left: 4.,
+        }),
+        container(text(song.title.clone()).wrapping(Wrapping::None)).style(move |t|queue_style(t, i, app.player.queue_pos))
+        .width(FillPortion(260))
+        .clip(true)
+        .padding(padding::Padding {
+            top: 0.,
+            right: 4.,
+            bottom: 0.,
+            left: 4.,
+        }),
+        container(text(song.artists.join(" / ")).wrapping(Wrapping::None)).style(container::bordered_box).style(move |t|queue_style(t, i, app.player.queue_pos))
+        .width(FillPortion(200))
+        .clip(true)
+        .padding(padding::Padding {
+            top: 0.,
+            right: 4.,
+            bottom: 0.,
+            left: 4.,
+        }),
+        container(text(song.format_duration()).wrapping(Wrapping::None)).style(move |t|queue_style(t, i, app.player.queue_pos))
+        .width(FillPortion(60))
+        .clip(true)
+        .padding(padding::Padding {
+            top: 0.,
+            right: 4.,
+            bottom: 0.,
+            left: 4.,
+        })
             //button(">"),
-            container(text(format!("{:02}: {} - {}    {}", &song.track_number, &song.artists[0], &song.title, &song.format_duration())))
-            .style(move |t|queue_style(t, i, app.player.queue_pos))
-            .width(Fill)
-            .padding(5)
+            // container(
+            //     text(format!("{:02}: {} - {}    {}", i + 1, &song.artists[0], &song.title, &song.format_duration()))
+            //     .size(16)
+            //     .line_height(LineHeight::Relative(1.))
+            //     .height(24)
+            //     .align_y(Alignment::Center)
+            // )
+            // .style(move |t|queue_style(t, i, app.player.queue_pos))
+            // .width(Fill)
+            // //.padding(5)
+            // .height(24)
         ];
         l = l.push(item);
     };
@@ -141,26 +198,12 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
     
     let list = container(scrollable(
         l
-        // column(
-            
-        //     app.player.song_queue.iter().enumerate()
-        //     .map(|song: (usize, &crate::musiclib::music_library::Song)| {
-        //         row![
-        //             //button(">"),
-        //             container(text(format!("{:02}: {} - {}    {}", &song.1.track_number, &song.1.artists[0], &song.1.title, &song.1.format_duration())))
-        //             .style(move |t|artist_style(t, song.0))
-        //             .width(Fill)
-        //             .padding(5)
-        //         ].into()
 
-                
-        //     })
-        // )
     ).style(scrollable_style))
     .width(Fill)
     .height(Fill);
 
-    column![header, list].into()
+    column![header, fields, list].into()
 }
 
 pub fn songs_page(_app: &App) -> Element<'_, Message> {
@@ -189,7 +232,7 @@ pub fn settings_page(app: &App) -> Element<'_, Message> {
     .padding(10).into()
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CollectionView {
     Songs,
     Albums,
@@ -200,11 +243,11 @@ pub fn collection_page(app: &App) -> Element<'_, Message> {
     let header = container(
         row![
             horizontal_space(),
-            header_button(Icon::Note, "Songs".into(), CollectionView::Songs),
+            header_button(Icon::Note, "Songs".into(), CollectionView::Songs, &app.collection_view),
             horizontal_space(),
-            header_button(Icon::Album, "Albums".into(), CollectionView::Albums),
+            header_button(Icon::Album, "Albums".into(), CollectionView::Albums, &app.collection_view),
             horizontal_space(),
-            header_button(Icon::Artist, "Artists".into(), CollectionView::Artists),
+            header_button(Icon::Artist, "Artists".into(), CollectionView::Artists, &app.collection_view),
             horizontal_space(),
             container("").width(10)
         ]
@@ -297,6 +340,10 @@ fn queue_style(theme: &Theme, alt: usize, pos: usize) -> container::Style {
             style.background = Some(palette.primary.base.color.into());
             style.text_color = Some(palette.primary.base.text);
         }
+        alt if alt == usize::MAX => {
+            style.background = Some(palette.secondary.base.color.into());
+            style.text_color = Some(palette.secondary.base.text);
+        }
         _ => {
             if alt % 2 == 0 {
                 style.background = Some(palette.background.weak.color.into());
@@ -313,10 +360,9 @@ fn queue_style(theme: &Theme, alt: usize, pos: usize) -> container::Style {
         
     }
     style.border.color = palette.background.strong.color;
-    style.border.width = 0.5;
+    style.border.width = 1.;
     style
 }
-
 
 fn scrollable_style(theme: &Theme, status: scrollable::Status) -> scrollable::Style {
     let palette = theme.extended_palette();
@@ -328,15 +374,16 @@ fn scrollable_style(theme: &Theme, status: scrollable::Status) -> scrollable::St
     style
 }
 
-fn header_button(icon: Icon, txt: String, msg: CollectionView) -> Button<'static, Message> {
+fn header_button(icon: Icon, txt: String, msg: CollectionView, app_view: &CollectionView) -> Button<'_, Message> {
 
     button(container(row![
         svg(svg::Handle::from(icon.icon_data()))
         .style(header_svg_style)
         .width(36),
-        text(txt).size(24)
+        text(txt).size(22)
         .align_y(Alignment::Center)
         .height(36)
+        .line_height(LineHeight::Relative(1.))
     ].spacing(4))
     .width(Fill)
     .align_x(Alignment::Start)
@@ -345,12 +392,12 @@ fn header_button(icon: Icon, txt: String, msg: CollectionView) -> Button<'static
     ).height(Length::Fixed(36.))
     .padding(4)
     .width(130)
-    .style(header_button_style)
+    .style(move |t,s| header_button_style(t,s, msg, app_view.clone()))
     .on_press(Message::CollectionViewChange(msg))
     .into()
 }
 
-fn header_button_style(theme: &Theme, status: button::Status) -> button::Style {
+fn header_button_style(theme: &Theme, status: button::Status, view: CollectionView, app_view: CollectionView) -> button::Style {
     let palette = theme.extended_palette();
     let mut style = button::Style::default();
     
@@ -359,14 +406,17 @@ fn header_button_style(theme: &Theme, status: button::Status) -> button::Style {
     style.border.color = palette.background.strong.color;
     style.border.radius = 6.0.into();
     // style.border.color = palette.background.strong.color;
+
     match status {
         button::Status::Active => {
             style.background = Some(palette.background.base.color.into());
             style.text_color = palette.background.base.text;
+            if view == app_view {style.background = Some(palette.background.strong.color.into());}
         },
         button::Status::Pressed => {
             style.background = Some(palette.background.strong.color.into());
             style.text_color = palette.background.strong.text;
+            if view == app_view {style.background = Some(palette.background.strong.color.into());}
         },
         button::Status::Hovered => {
             style.background = Some(palette.background.weak.color.into());
