@@ -245,6 +245,7 @@ pub struct Player {
     pub current_song: Option<Song>,
     pub next_appended: bool,
     last_skipped: bool,
+    queue_cleared: bool,
     state: PlayerState,
     loop_state: LoopState,
     shuffle_state: ShuffleState
@@ -304,6 +305,7 @@ impl App {
                 queue_pos: 0,
                 current_song: None,
                 last_skipped: false,
+                queue_cleared: false,
                 next_appended: false,
                 state: PlayerState::Idle,
                 loop_state: LoopState::None,
@@ -462,6 +464,7 @@ impl App {
                 self.version = 0;
                 if !self.player.next_appended {
                     self.player.queue_pos = 0;
+                    self.player.queue_cleared = true;
                     self.player.song_queue.clear();
                 }
             },
@@ -683,21 +686,23 @@ impl App {
         }
 
         //if single looping and user did not skip, just replay current song, do nothing else
-        if self.player.loop_state == LoopState::Song && self.player.current_song.is_some() && !self.player.last_skipped {
+        if self.player.loop_state == LoopState::Song && self.player.current_song.is_some() && !self.player.last_skipped && !self.player.queue_cleared {
             self.add_song_to_sink(self.player.current_song.as_ref().unwrap().clone());
             return;
         }
         //in any other case last_skipped is irrelevant
         self.player.last_skipped = false;
 
-        //if no song is in player, and there is a song at the front of the queue, play first song
+        //if no song is in player or queue was cleared, and there is a song at the front of the queue, play first song
         //currently shouldnt be possible for first index of song_queue to be none here but better to check anyway
-        if self.player.current_song.is_none() && self.player.song_queue.get(0).is_some() {
+        if (self.player.current_song.is_none() || self.player.queue_cleared) && self.player.song_queue.get(0).is_some() {
+            self.player.queue_cleared = false;
             self.player.queue_pos = 0;
             self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
             self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
             return;
         }
+        self.player.queue_cleared = false;
 
         // todo - if nothing past queue_pos and check for looping all
         if self.player.song_queue.get(self.player.queue_pos + 1).is_some() {
