@@ -663,7 +663,7 @@ impl App {
         if self.player.state == PlayerState::Active {self.player.state = PlayerState::Idle};
         self.player.progress = 0.;
         self.player.queue_pos = 0;
-        self.version -= 1;
+        self.version += 1;
     }
     //this is always called when a song is to be added to the sink, so this handles next song logic
     fn get_next_song(&mut self) {
