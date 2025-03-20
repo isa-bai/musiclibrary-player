@@ -576,7 +576,7 @@ impl App {
             song_text = column![
                 scrollable(text(self.player.current_song.as_ref().unwrap().title.clone())
                     .size(16).align_x(Alignment::Start).height(Length::Shrink)
-                    .line_height(LineHeight::Relative(1.)).wrapping(text::Wrapping::None))
+                    .wrapping(text::Wrapping::None))
                     .id(self.song_text_id.clone())
                     .style(song_scroll_style).width(210)
                     // .horizontal(),

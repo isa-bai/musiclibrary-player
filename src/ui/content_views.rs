@@ -411,17 +411,28 @@ fn header_button_style(theme: &Theme, status: button::Status, view: CollectionVi
         button::Status::Active => {
             style.background = Some(palette.background.base.color.into());
             style.text_color = palette.background.base.text;
-            if view == app_view {style.background = Some(palette.background.strong.color.into());}
+            if view == app_view {
+                let gradient = gradient::Linear::new(0)
+                .add_stop(0.1, palette.background.weak.color)
+                .add_stop(0.7, palette.background.weakest.color);
+                style.background = Some(gradient.into());
+                style.border.width = 2.;
+            }
         },
         button::Status::Pressed => {
             style.background = Some(palette.background.strong.color.into());
             style.text_color = palette.background.strong.text;
-            if view == app_view {style.background = Some(palette.background.strong.color.into());}
         },
         button::Status::Hovered => {
             style.background = Some(palette.background.weak.color.into());
             style.border.width = 2.;
             style.text_color = palette.background.weak.text;
+            if view == app_view {
+                let gradient = gradient::Linear::new(0)
+                .add_stop(0.1, palette.background.weak.color)
+                .add_stop(0.7, palette.background.weakest.color);
+                style.background = Some(gradient.into());
+            }
         },
         _ => {}
     }
