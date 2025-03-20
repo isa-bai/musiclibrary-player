@@ -7,7 +7,11 @@ lazy_static! {
     pub static ref FORWARD_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/forward.svg").to_vec());
     pub static ref BACK_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/back.svg").to_vec());
     pub static ref LOOP_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/loop.svg").to_vec());
+    pub static ref LOOP1_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/loop1.svg").to_vec());
     pub static ref SHUFFLE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/shuffle.svg").to_vec());
+    pub static ref NOTE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/note.svg").to_vec());
+    pub static ref ALBUM_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/album.svg").to_vec());
+    pub static ref ARTIST_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/artist.svg").to_vec());
 }
 
 pub enum Icon {
@@ -17,7 +21,11 @@ pub enum Icon {
     Forward,
     Back,
     Loop,
-    Shuffle
+    Loop1,
+    Shuffle,
+    Note,
+    Album,
+    Artist
 }
 
 impl Icon {
@@ -29,7 +37,11 @@ impl Icon {
             Icon::Forward => FORWARD_ICON.clone(),
             Icon::Back => BACK_ICON.clone(),
             Icon::Loop => LOOP_ICON.clone(),
+            Icon::Loop1 => LOOP1_ICON.clone(),
             Icon::Shuffle => SHUFFLE_ICON.clone(),
+            Icon::Note => NOTE_ICON.clone(),
+            Icon::Album => ALBUM_ICON.clone(),
+            Icon::Artist => ARTIST_ICON.clone(),
         }
     }
 }

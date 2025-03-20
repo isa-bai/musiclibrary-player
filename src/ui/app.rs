@@ -17,7 +17,7 @@ use iced::{stream, Subscription, Task};
 
 use crate::musiclib::music_library::{self, AlbumKey, MusicLibrary, Song};
 use super::icons::Icon;
-use super::content_views::{album_page, artist_page, queue_page, settings_page};
+use super::content_views::{collection_page, queue_page, settings_page, CollectionView};
 
 const SIDEBAR_SIZE: f32 = 80.;
 
@@ -96,11 +96,39 @@ fn control_button_style(theme: &Theme, status: button::Status) -> button::Style 
     style
 }
 
-fn control_svg_style(theme: &Theme, _status: svg::Status) -> svg::Style {
+fn lower_control_button_style(theme: &Theme, status: button::Status, is_on: bool) -> button::Style {
+    let palette = theme.extended_palette();
+    let mut style;
+    if is_on {
+        style = button::primary(theme, status);
+        style.border.color = palette.primary.strong.color;
+    } else {
+        style = button::secondary(theme, status);
+        style.border.color = palette.secondary.strong.color;
+    }
+    // style.background = Some(palette.background.weak.color.into());
+    //style.text_color = palette.background.weak.text;
+    style.border.width = 2.;
+    //style.border.color = palette.secondary.strong.color;
+    style.border.radius = 6.0.into();
+    // style.border.color = palette.background.strong.color;
+
+    style
+}
+
+fn lower_control_svg_style(theme: &Theme, _status: svg::Status, is_on: bool) -> svg::Style {
     let palette = theme.extended_palette();
     let mut style = svg::Style::default();
-    style.color = Some(palette.secondary.base.text.into());
+    if is_on {
+        style.color = Some(palette.primary.base.text.into());
+    } else {
+        style.color = Some(palette.secondary.base.text.into());
+    }
     style
+}
+
+fn control_svg_style(theme: &Theme, status: svg::Status) -> svg::Style {
+    lower_control_svg_style(theme, status, false)
 }
 
 fn sidebar_button(txt: &str, msg: ContentView) -> Button<'_, Message> {
@@ -126,7 +154,7 @@ fn song_scroll_style(theme: &Theme, status: scrollable::Status) -> scrollable::S
 }
 
 
-enum ButtonType {
+pub enum ButtonType {
     Text(String),
     Svg(Icon)
 }
@@ -158,33 +186,6 @@ fn top_control_button(kind: ButtonType, msg: ControlMsg) -> Button<'static, Mess
     }
 }
 
-fn lower_control_button(kind: ButtonType, msg: ControlMsg) -> Button<'static, Message> {
-    match kind {
-        ButtonType::Text(txt) => {
-            button(text(txt)
-            .align_x(Center)
-            .align_y(Center)
-            .size(12))
-            .height(Length::Fixed(24.))
-            .width(Length::Fixed(24.))
-            .style(control_button_style)
-            .on_press(Message::ControlChange(msg))
-            .into()
-        },
-        
-
-        ButtonType::Svg(icon) => {
-            button(container(svg(svg::Handle::from(icon.icon_data()))
-            .style(control_svg_style).height(Length::Fill)).center(Length::Fixed(24.))
-            ).height(Length::Fixed(26.))
-            .width(Length::Fixed(32.))
-            .style(control_button_style)
-            .on_press(Message::ControlChange(msg))
-            .padding(3)
-            .into()
-        }
-    }
-}
 
 
 
@@ -193,6 +194,7 @@ pub enum Message {
     BackgroundWorker(Sender<Message>),
     ThemeChanged(Theme),
     ContentChanged(ContentView),
+    CollectionViewChange(CollectionView),
     ControlChange(ControlMsg),
     AddAlbumToQueue(AlbumKey),
     SongFinished,
@@ -222,10 +224,11 @@ enum PlayerState {
 #[derive(PartialEq, Debug)]
 enum LoopState {
     None,
-    Single,
-    All
+    All,
+    Song,
 }
 
+#[derive(PartialEq, Debug)]
 enum ShuffleState {
     Off,
     On
@@ -241,9 +244,8 @@ pub struct Player {
     pub current_song: Option<Song>,
     pub next_appended: bool,
     state: PlayerState,
-    looping: LoopState,
-    // queue: Arc<SourcesQueueInput>,
-    // queue_handle: SourcesQueueOutput
+    loop_state: LoopState,
+    shuffle_state: ShuffleState
 }
 
 pub struct App {
@@ -256,6 +258,7 @@ pub struct App {
     pub durtick: u32,
     pub sender: Option<Sender<Message>>,
     song_text_id: scrollable::Id,
+    pub collection_view: CollectionView,
 }
 
 
@@ -286,6 +289,7 @@ impl App {
 
         Self {
             current_view: ContentView::Queue,
+            collection_view: CollectionView::Albums,
             theme: Theme::CatppuccinMacchiato,
             library: lib,
             player: Player {
@@ -298,9 +302,8 @@ impl App {
                 current_song: None,
                 next_appended: false,
                 state: PlayerState::Idle,
-                looping: LoopState::None,
-                // queue: queue,
-                // queue_handle: queue_handle
+                loop_state: LoopState::None,
+                shuffle_state: ShuffleState::Off
             },
             imghandles: ih,
             version: 0,
@@ -406,11 +409,14 @@ impl App {
                             let cur = self.player.sink.get_pos().as_secs_f32();
                             let dur = song.duration.as_secs_f32();
                             self.player.progress = cur / dur;                                
-                            if  dur - cur < 0.4 &&
+                            /*if song almost finished,
+                            not single looping,
+                            and another song is in queue,
+                            then append next song to sink pre-emptively*/
+                            if dur - cur < 0.4 &&
                                 !self.player.next_appended &&
-                                self.player.looping != LoopState::Single &&
+                                self.player.loop_state != LoopState::Song &&
                                 !self.player.song_queue.is_empty() {
-                                //if song almost finished, append next song to sink
                                 self.add_song_to_sink(self.player.song_queue.front().unwrap().clone());
                                 self.player.next_appended = true;
                             }
@@ -423,9 +429,20 @@ impl App {
                                 }
                             )
                         }
-
-                        //println!("event");
-                    }
+                    },
+                    ControlMsg::ShuffleChanged => {
+                        match self.player.shuffle_state {
+                            ShuffleState::Off => self.player.shuffle_state = ShuffleState::On,
+                            ShuffleState::On => self.player.shuffle_state = ShuffleState::Off
+                        }
+                    },
+                    ControlMsg::LoopingChanged => {
+                        match self.player.loop_state {
+                            LoopState::None => self.player.loop_state = LoopState::All,
+                            LoopState::All => self.player.loop_state = LoopState::Song,
+                            LoopState::Song => self.player.loop_state = LoopState::None
+                        }
+                    },
                     _ => {}
                 }
             }
@@ -449,6 +466,9 @@ impl App {
                     self.current_view = ContentView::Queue;
                 }
             }
+            Message::CollectionViewChange(view) => {
+                self.collection_view = view;
+            }
         }
         Task::none()
     }
@@ -460,8 +480,7 @@ impl App {
         let sidebar = 
         container(scrollable(column![
             sidebar_button("Queue", ContentView::Queue),
-            sidebar_button("Albums", ContentView::Albums),
-            sidebar_button("Artists", ContentView::Artists),
+            sidebar_button("Collection", ContentView::Collection),
             sidebar_button("Settings", ContentView::Settings)
             .height(30)
             ])
@@ -490,10 +509,9 @@ impl App {
         else {
             remaining_dur = "-:--:--".to_string();
         }
-        let content = match self.current_view {
-            ContentView::Albums => album_page(self),
-            ContentView::Artists => artist_page(self),
+        let content = match &self.current_view {
             ContentView::Queue => queue_page(self),
+            ContentView::Collection => collection_page(self),
             ContentView::Settings => settings_page(self),
             //_ => {queue_page(self)}
         };
@@ -505,6 +523,9 @@ impl App {
         else {
             toggle_data = Icon::Pause;
         }
+
+        // CONTROL BUTTONS
+
         let control_buttons = row![
             top_control_button(ButtonType::Svg(Icon::Back), ControlMsg::Back),
             top_control_button(ButtonType::Svg(toggle_data), ControlMsg::TogglePlayback),
@@ -519,12 +540,15 @@ impl App {
         ].spacing(8).height(Fill).align_y(Center);
         let top_controls = row![control_buttons, control_sliders].height(38).spacing(8);
 
-
-
+        //LOWER CONTROLS
+        let mut loop_icon = Icon::Loop;
+        if self.player.loop_state == LoopState::Song {
+            loop_icon = Icon::Loop1
+        }
         let lower_controls = row![
             horizontal_space(),
-            lower_control_button(ButtonType::Svg(Icon::Loop), ControlMsg::LoopingChanged),
-            lower_control_button(ButtonType::Svg(Icon::Shuffle), ControlMsg::ShuffleChanged),
+            self.lower_control_button(ButtonType::Svg(loop_icon), ControlMsg::LoopingChanged),
+            self.lower_control_button(ButtonType::Svg(Icon::Shuffle), ControlMsg::ShuffleChanged),
             container(
                 row![text(format!("{:.0}%", self.player.volume*100.)).width(38).align_x(Alignment::End).align_y(Alignment::Center),
                 slider(0.0..=1.0, self.player.volume, |v| Message::ControlChange(ControlMsg::SetVolume(v))).step(0.01).style(slider_style).width(120)
@@ -620,10 +644,16 @@ impl App {
     fn get_next_song(&mut self) {
         self.version += 1;
         self.durtick = 0;
+
         //if next song already appended, update info and return
         if self.player.next_appended {
             self.player.next_appended = false;
             self.player.current_song = Some(self.player.song_queue.pop_front().unwrap());
+            return;
+        }
+
+        if self.player.loop_state == LoopState::Song && self.player.current_song.is_some() {
+            self.add_song_to_sink(self.player.current_song.as_ref().unwrap().clone());
             return;
         }
 
@@ -721,6 +751,45 @@ impl App {
     }
 } 
     
+fn lower_control_button(&self, kind: ButtonType, msg: ControlMsg) -> Button<'static, Message> {
+    let is_on;
+    match msg {
+        ControlMsg::LoopingChanged => {
+            is_on = !(self.player.loop_state == LoopState::None) 
+
+        }
+        ControlMsg::ShuffleChanged => {
+            is_on = self.player.shuffle_state == ShuffleState::On
+        }
+        _ => is_on = false
+    }
+
+    match kind {
+        ButtonType::Text(txt) => {
+            button(text(txt)
+            .align_x(Center)
+            .align_y(Center)
+            .size(12))
+            .height(Length::Fixed(24.))
+            .width(Length::Fixed(24.))
+            .style(move |t,s| lower_control_button_style(t,s,is_on))
+            .on_press(Message::ControlChange(msg))
+            .into()
+        },
+        
+        ButtonType::Svg(icon) => {
+            button(container(svg(svg::Handle::from(icon.icon_data()))
+            .style(move |t,s| lower_control_svg_style(t,s,is_on)).height(Length::Fill)).center(Length::Fixed(24.))
+            ).height(Length::Fixed(26.))
+            .width(Length::Fixed(32.))
+            .style(move |t,s| lower_control_button_style(t,s,is_on))
+            .on_press(Message::ControlChange(msg))
+            .padding(3)
+            .into()
+        }
+    }
+}
+
     
 }
 
@@ -732,10 +801,9 @@ impl Default for App {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ContentView {
-    Albums,
-    Artists,
     Queue,
-    Settings
+    Settings,
+    Collection
 }
 
 fn format_duration(dur: Duration) -> String {

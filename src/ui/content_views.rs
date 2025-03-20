@@ -1,28 +1,15 @@
 
-use iced::{gradient, padding, widget::{self, button, column, container, horizontal_space, image, lazy, pick_list, row, scrollable, text, tooltip, Button, Column}, Alignment::Center, Element, Length::Fill, Theme};
-use super::app::{App, Message, IMG_SIZE};
+use std::net::Shutdown;
+
+use iced::{gradient, padding, widget::{button, column, container, horizontal_space, image, lazy, pick_list, row, scrollable, svg, text, tooltip, Button, Column}, Alignment, Element, Length::{self, Fill, Shrink}, Theme};
+use super::{app::{App, Message, IMG_SIZE}, icons::Icon};
 
 
 const ARTWORK_BORDER: u32 = 4;
 
 pub fn album_page(app: &App) -> Element<'_, Message> {
     lazy(app.version, move |_version| {
-        let header = container(
-            text("Albums")
-                .width(Fill)
-                .height(36)
-                .center()
-                .size(24)
-        ).width(Fill).height(36).style(container::transparent);
-
-        let mut grid: widget::Column<'_, Message> = column![
-            row![
-                horizontal_space(),
-                header,
-                horizontal_space(),
-                container("").width(10)
-            ]
-        ].width(Fill).align_x(Center);
+        let mut grid = Column::new().padding(padding::top(20));
 
         let mut this_row: Vec<Element<'_, Message>> = Vec::new();
         this_row.push(horizontal_space().into());
@@ -86,15 +73,6 @@ pub fn album_page(app: &App) -> Element<'_, Message> {
 // }
 
 pub fn artist_page(app: &App) -> Element<'_, Message> {
-
-    let header = container(
-        text("Artists")
-                .width(Fill)
-                .height(36)
-                .center()
-                .size(24)
-        ).width(Fill).height(36).style(container::transparent);
-
     let list = container(scrollable(
         column(
             app.library.get_artists().iter().enumerate()
@@ -113,8 +91,7 @@ pub fn artist_page(app: &App) -> Element<'_, Message> {
     ).style(scrollable_style))
     .width(Fill)
     .height(Fill);
-
-    column![header, list].into()
+    list.into()
 
 }
 
@@ -185,11 +162,8 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
     column![header, list].into()
 }
 
-
-pub fn settings_page(app: &App) -> Element<'_, Message> {
-    container(pick_list(Theme::ALL, Some(&app.theme), Message::ThemeChanged)
-                .width(Fill)
-                .text_size(14))
+pub fn songs_page(_app: &App) -> Element<'_, Message> {
+    container("songs page")
     .width(Fill)
     .height(Fill)
     .padding(10).into()
@@ -199,16 +173,60 @@ pub fn settings_page(app: &App) -> Element<'_, Message> {
     // .padding(10).into()
 }
 
+pub fn settings_page(app: &App) -> Element<'_, Message> {
+    container(row![
+        text("Theme: ")
+        .shaping(text::Shaping::Advanced)
+        .height(28)
+        .size(14)
+        .align_y(Alignment::Center),
+        pick_list(Theme::ALL, Some(&app.theme), Message::ThemeChanged)
+        .width(Shrink)
+        .text_size(14)
+    ].height(28)).width(Fill)
+    .height(Fill)
+    .padding(10).into()
+}
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum CollectionView {
+    Songs,
+    Albums,
+    Artists
+}
+
+pub fn collection_page(app: &App) -> Element<'_, Message> {
+    let header = container(
+        row![
+            horizontal_space(),
+            header_button(Icon::Note, "Songs".into(), CollectionView::Songs),
+            horizontal_space(),
+            header_button(Icon::Album, "Albums".into(), CollectionView::Albums),
+            horizontal_space(),
+            header_button(Icon::Artist, "Artists".into(), CollectionView::Artists),
+            horizontal_space(),
+            container("").width(10)
+        ]
+    ).width(Fill).height(44).style(header_style).padding(4);
+
+    let content = match app.collection_view {
+        CollectionView::Songs => songs_page(app),
+        CollectionView::Albums => album_page(app),
+        CollectionView::Artists => artist_page(app),
+        //_ => container("").into()
+    };
+    column![header, container(content).height(Fill)].into()
+    //container(header).height(Fill).into()
+}
 
 fn header_style(theme: &Theme) -> container::Style {
     let palette = theme.extended_palette();
     let mut style = container::Style::default();
     style.background = Some(palette.background.base.color.into());
     style.text_color = Some(palette.background.base.text.into());
-    style.border.radius = 0.0.into();
-    //style.border.width = 0.5;
-    //style.border.color = palette.background.strong.color;
+    style.border.radius = 6.0.into();
+    style.border.width = 2.;
+    style.border.color = palette.background.strong.color;
     style
 }
 
@@ -280,3 +298,45 @@ fn scrollable_style(theme: &Theme, status: scrollable::Status) -> scrollable::St
     style
 }
 
+fn header_button(icon: Icon, txt: String, msg: CollectionView) -> Button<'static, Message> {
+
+
+    button(container(row![
+        svg(svg::Handle::from(icon.icon_data()))
+        .style(header_svg_style)
+        .width(36),
+        text(txt).size(24)
+        .align_y(Alignment::Center)
+        .height(36)
+    ].spacing(4))
+    .width(Fill)
+    .align_x(Alignment::Start)
+    .center(Length::Fill)
+    .height(36)
+    ).height(Length::Fixed(36.))
+    .padding(4)
+    .width(130)
+    .style(header_button_style)
+    .on_press(Message::CollectionViewChange(msg))
+    .into()
+}
+
+fn header_button_style(theme: &Theme, status: button::Status) -> button::Style {
+    let palette = theme.extended_palette();
+    let mut style = button::secondary(theme, status);
+    // style.background = Some(palette.background.weak.color.into());
+    //style.text_color = palette.background.weak.text;
+    style.border.width = 2.;
+    style.border.color = palette.secondary.strong.color;
+    style.border.radius = 6.0.into();
+    // style.border.color = palette.background.strong.color;
+
+    style
+}
+
+fn header_svg_style(theme: &Theme, _status: svg::Status) -> svg::Style {
+    let palette = theme.extended_palette();
+    let mut style = svg::Style::default();
+    style.color = Some(palette.secondary.base.text.into());
+    style
+}
