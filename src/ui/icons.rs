@@ -12,8 +12,13 @@ lazy_static! {
     pub static ref NOTE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/note.svg").to_vec());
     pub static ref ALBUM_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/album.svg").to_vec());
     pub static ref ARTIST_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/artist.svg").to_vec());
+    pub static ref MINIMISE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/minimise.svg").to_vec());
+    pub static ref MAXIMISE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/maximise.svg").to_vec());
+    pub static ref UNMAXIMISE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/unmaximise.svg").to_vec());
+    pub static ref CLOSE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/close.svg").to_vec());
 }
 
+#[derive(Clone, Copy)]
 pub enum Icon {
     Play,
     Pause,
@@ -25,7 +30,11 @@ pub enum Icon {
     Shuffle,
     Note,
     Album,
-    Artist
+    Artist,
+    Minimise,
+    Maximise,
+    Unmaximise,
+    Close
 }
 
 impl Icon {
@@ -42,6 +51,10 @@ impl Icon {
             Icon::Note => NOTE_ICON.clone(),
             Icon::Album => ALBUM_ICON.clone(),
             Icon::Artist => ARTIST_ICON.clone(),
+            Icon::Minimise => MINIMISE_ICON.clone(),
+            Icon::Maximise => MAXIMISE_ICON.clone(),
+            Icon::Unmaximise => UNMAXIMISE_ICON.clone(),
+            Icon::Close => CLOSE_ICON.clone(),
         }
     }
 }

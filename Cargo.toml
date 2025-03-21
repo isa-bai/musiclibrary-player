@@ -13,7 +13,7 @@ symphonia = { version = "0.5.4", features = ["all", "opt-simd"] }
 tokio = { version = "1.44.1", features = ["rt-multi-thread"] }
 
 [dependencies.iced]
-git = "https://github.com/iced-rs/iced.git"
+git = "https://github.com/isa-bai/iced"
 #rev = "bae25b74f68078e5ff74cdae717273cf315d4e90"
 default-features = false
 features = [
@@ -43,10 +43,12 @@ lto = true
 incremental = false
 opt-level = 3
 overflow-checks = false
-strip = "debuginfo"
+strip = true
 
 [profile.small]
 inherits = "release-opts"
 opt-level = "s"
-strip = "symbols"
+strip = true
+panic = "abort"
+
 

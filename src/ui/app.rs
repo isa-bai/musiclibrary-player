@@ -1,10 +1,12 @@
 use std::{collections::VecDeque, io::BufReader, time::Duration};
 use iced::futures::channel::mpsc::{self, Sender};
 use iced::futures::SinkExt;
+use iced::mouse::Interaction;
 use iced::time::{self, milliseconds};
 
 use ahash::AHashMap;
-use iced::widget::{lazy, svg, Column};
+use iced::widget::{lazy, mouse_area, svg, Column};
+use iced::window::show_system_menu;
 use iced::{
     gradient, widget::{button, column, container, horizontal_space, image, row, scrollable, slider, slider::HandleShape, text, Button}, window::Settings, Alignment, Border, Center, Element, Length::{self, Fill}, Size, Theme};
 
@@ -13,7 +15,7 @@ use rodio::{source::EmptyCallback, OutputStream, Sink};
 use iced::futures::StreamExt;
 
 use iced::futures::Stream;
-use iced::{stream, window, Subscription, Task};
+use iced::{mouse, stream, window, Subscription, Task};
 
 use crate::musiclib::music_library::{self, AlbumKey, MusicLibrary, Song};
 use super::icons::Icon;
@@ -108,6 +110,7 @@ fn lower_control_button_style(theme: &Theme, status: button::Status, is_on: bool
     }
     // style.background = Some(palette.background.weak.color.into());
     //style.text_color = palette.background.weak.text;
+    
     style.border.width = 2.;
     //style.border.color = palette.secondary.strong.color;
     style.border.radius = 6.0.into();
@@ -191,6 +194,7 @@ fn top_control_button(kind: ButtonType, msg: &ControlMsg) -> Button<'_, Message>
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    Window(WindowMsg),
     BackgroundWorker(Sender<Message>),
     ThemeChanged(Theme),
     ContentChanged(ContentView),
@@ -199,6 +203,19 @@ pub enum Message {
     AddAlbumToQueue(AlbumKey),
     SongFinished,
     ClearQueue
+}
+
+#[derive(Debug, Clone)]
+pub enum WindowMsg {
+    CloseWindow,
+    TitlebarClick(bool),
+    DragWindow,
+    OpenSystemMenu,
+    //MinimiseRequest,
+    MinimiseWindow,
+    MaximiseRequest,
+    MaximiseWindow(bool),
+    SetWindowId(Option<window::Id>),
 }
 
 #[derive(Debug, Clone)]
@@ -219,6 +236,12 @@ pub enum ControlMsg {
 enum PlayerState {
     Idle,
     Active
+}
+#[derive(PartialEq, Debug)]
+enum WindowState {
+    None,
+    Minimised,
+    Maximised
 }
 
 #[derive(PartialEq, Debug)]
@@ -262,11 +285,16 @@ pub struct App {
     pub sender: Option<Sender<Message>>,
     song_text_id: scrollable::Id,
     pub collection_view: CollectionView,
+    window_id: Option<window::Id>,
+    window_state: WindowState,
+    title_clicked: bool,
+    maximise_icon: Icon
 }
 
 
 impl App {
     fn new() -> Self {
+
         let mut lib = music_library::scan_library("C:/Users/Isaac/Music".to_string(), IMG_SIZE);
         //let stream_handle = rodio::OutputStreamBuilder::open_default_stream().unwrap();
         let stream_handle = rodio::OutputStreamBuilder::open_default_stream().unwrap();
@@ -316,6 +344,10 @@ impl App {
             durtick: 0,
             sender: None,
             song_text_id: scrollable::Id::unique(),
+            window_id: None,
+            window_state: WindowState::None,
+            title_clicked: false,
+            maximise_icon: Icon::Maximise
         }
     }
 
@@ -338,8 +370,45 @@ impl App {
     fn update(&mut self, message: Message) -> Task<Message> {
 
         match message {
+            Message::Window(msg) => {
+                match msg {
+                    WindowMsg::MaximiseRequest => {
+                        return window::get_maximized(self.window_id.unwrap())
+                        .map(|r| Message::Window(WindowMsg::MaximiseWindow(!r)));
+                    },
+                    WindowMsg::MaximiseWindow(b) =>{
+                        self.title_clicked = false;
+                        if b {self.maximise_icon = Icon::Unmaximise;}
+                        else {self.maximise_icon = Icon::Maximise;}
+                        return window::maximize(self.window_id.unwrap(), b);
+                    }
+                    WindowMsg::MinimiseWindow =>{
+                        self.title_clicked = false;
+                        return window::minimize(self.window_id.unwrap(), true);
+                    }
+                    WindowMsg::TitlebarClick(b) => {
+                        self.title_clicked = b;
+                    }
+                    WindowMsg::DragWindow => {
+                        if self.title_clicked {
+                            self.title_clicked = false;
+                            return window::drag(self.window_id.unwrap());
+                        }
+                    }
+                    WindowMsg::CloseWindow => {
+                        return window::close(self.window_id.unwrap());
+                    }
+                    WindowMsg::SetWindowId(id) => {
+                        self.window_id = id;
+                    }
+                    WindowMsg::OpenSystemMenu => {
+                        return show_system_menu(self.window_id.unwrap());
+                    }
+                }
+            }
             Message::BackgroundWorker(sender) => {
                 self.sender = Some(sender);
+                return window::get_latest().map(|f| Message::Window(WindowMsg::SetWindowId(f)));
             }
             Message::ThemeChanged(theme) => {
                 self.theme = theme;
@@ -419,7 +488,6 @@ impl App {
                     },
                     ControlMsg::UpdateDuration => {
                         if let Some(song) = &self.player.current_song {
-                            self.durtick += 1;
                             let cur = self.player.sink.get_pos().as_secs_f32();
                             let dur = song.duration.as_secs_f32();
                             self.player.progress = cur / dur;                                
@@ -435,7 +503,8 @@ impl App {
                                 self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos + 1).unwrap().clone());
                                 self.player.next_appended = true;
                             }
-                            let pos = ((self.durtick % 37) as f32 * 0.05) - 0.4;
+                            let pos = ((self.durtick % 36) as f32 * 0.05) - 0.4;
+                            self.durtick += 1;
                             return scrollable::snap_to::<Message>(
                                 self.song_text_id.clone(),
                                 scrollable::RelativeOffset {
@@ -488,6 +557,7 @@ impl App {
             Message::CollectionViewChange(view) => {
                 self.collection_view = view;
             }
+            _ => {}
         }
         Task::none()
     }
@@ -554,7 +624,11 @@ impl App {
         let control_sliders: row::Row<'_, Message> = row![
             text(current_pos).size(14),
             slider(0.0..=1.0, self.player.progress, |v| Message::ControlChange(ControlMsg::Sliding(v)))
-                .on_release(Message::ControlChange(ControlMsg::Seek(self.player.progress))).step(0.002).style(slider_style),
+                .on_release(Message::ControlChange(ControlMsg::Seek(self.player.progress)))
+                .step(0.002)
+                .style(slider_style)
+                .hover_interaction(Interaction::default())
+                .drag_interaction(Interaction::default()),
             text(remaining_dur).size(14),
         ].spacing(8).height(Fill).align_y(Center);
         let top_controls = row![control_buttons, control_sliders].height(38).spacing(8);
@@ -656,7 +730,33 @@ impl App {
             .width(Fill)
             .height(Fill);
         
-        row![sidebar, main_area].into()
+        let mut titlebar = mouse_area(row![
+            text(self.title()),
+            horizontal_space(),
+        ].height(30))
+        .interaction(mouse::Interaction::None)
+        .on_press(Message::Window(WindowMsg::TitlebarClick(true))) 
+        .on_double_click(Message::Window(WindowMsg::MaximiseRequest))
+        .on_release(Message::Window(WindowMsg::TitlebarClick(false)))
+        .on_exit(Message::Window(WindowMsg::TitlebarClick(false)))
+        .on_right_release(Message::Window(WindowMsg::OpenSystemMenu))
+        ;
+        if self.title_clicked {
+           titlebar = titlebar.on_move(|_| Message::Window(WindowMsg::DragWindow));
+        }
+
+        let bar = row![
+            titlebar,
+            titlebar_button(Icon::Minimise, &WindowMsg::MinimiseWindow),
+            titlebar_button(self.maximise_icon, &WindowMsg::MaximiseRequest),
+            titlebar_button(Icon::Close, &WindowMsg::CloseWindow),
+        ];
+        let decoration = container(bar).width(Fill).height(30);
+        
+
+        // let lower_middle = mouse_area(container("").height(5).width(Fill)).interaction(Interaction::ResizingVertically);
+        // let lower_border = row![lower_middle];
+        column![decoration, row![sidebar, main_area]].into()
 
     }
 
@@ -862,6 +962,59 @@ pub enum ContentView {
     Collection
 }
 
+
+fn titlebar_button_style(theme: &Theme, status: button::Status, exit: bool) -> button::Style {
+    let palette = theme.extended_palette();
+    let mut style = button::Style::default();
+    // style.background = Some(palette.background.weak.color.into());
+    //style.text_color = palette.background.weak.text;
+    style.border.width = 0.;
+    style.background = Some(palette.background.base.color.into());
+    style.border.color = palette.secondary.strong.color;
+    style.border.radius = 0.0.into();
+    // style.border.color = palette.background.strong.color;
+    match status {
+        button::Status::Hovered => {
+            if exit {style.background = Some(palette.danger.weak.color.into());}
+            else {style.background = Some(palette.background.weak.color.into());}
+        },
+        button::Status::Pressed => {
+            if exit {style.background = Some(palette.danger.strong.color.into());}
+            else {style.background = Some(palette.background.strong.color.into());}
+        },
+        _ => {}
+    }
+    style
+}
+
+fn titlebar_button(icon: Icon, msg: &WindowMsg) -> Button<'_, Message> {
+    let exit;
+    match msg {
+        WindowMsg::CloseWindow => exit = true,
+        _ => exit = false
+    }
+    button(container(svg(svg::Handle::from(icon.icon_data()))
+    .style(titlebar_svg_style).width(10)).center(Length::Fixed(10.))
+    //.align_x(Center)
+    //.align_y(Center)
+    ).height(Length::Fixed(30.))
+    .width(Length::Fixed(45.))
+    .style(move |t,s| titlebar_button_style(t, s, exit))
+    .on_press(Message::Window(msg.clone()))
+    .into()
+
+}
+
+fn titlebar_svg_style(theme: &Theme, _status: svg::Status) -> svg::Style {
+    let palette = theme.extended_palette();
+    let mut style = svg::Style::default();
+    style.color = Some(palette.background.base.text.into());
+
+    style
+}
+
+
+
 fn format_duration(dur: Duration) -> String {
     let total_seconds = dur.as_secs();
     //let milliseconds = self.duration.subsec_millis();
@@ -877,12 +1030,15 @@ fn format_duration(dur: Duration) -> String {
 pub fn run() -> iced::Result {
 
     let mut window_settings = Settings::default();
-    window_settings.size = Size::new(640., 380.);
-    window_settings.min_size = Some(Size::new(640., 380.));
+    window_settings.size = Size::new(640., 410.);
+    window_settings.decorations = false;
+    window_settings.transparent = true;
+    window_settings.min_size = Some(Size::new(640., 410.));
     window_settings.icon = Some(window::icon::from_file_data(include_bytes!("../../assets/icon.png"), None).unwrap());
     iced::application(App::title, App::update, App::view)
     .theme(App::theme)
     .window(window_settings)
     .subscription(App::subscription)
+    .transparent(true)
     .run()
 }
