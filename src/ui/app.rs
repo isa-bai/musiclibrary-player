@@ -5,6 +5,7 @@ use iced::mouse::Interaction;
 use iced::time::{self, milliseconds};
 
 use ahash::AHashMap;
+use iced::widget::text::LineHeight;
 use iced::widget::{lazy, mouse_area, svg, vertical_space, Column};
 use iced::window::show_system_menu;
 use iced::{
@@ -696,7 +697,12 @@ impl App {
             self.lower_control_button(ButtonType::Svg(Icon::Shuffle), ControlMsg::ShuffleChanged),
             container(
                 row![text(format!("{:.0}%", self.player.volume*100.)).width(38).align_x(Alignment::End).align_y(Alignment::Center),
-                slider(0.0..=1.0, self.player.volume, |v| Message::ControlChange(ControlMsg::SetVolume(v))).step(0.01).style(slider_style).width(120)
+                slider(0.0..=1.0, self.player.volume, |v| Message::ControlChange(ControlMsg::SetVolume(v)))
+                .step(0.01)
+                .style(slider_style)
+                .width(120)
+                .hover_interaction(Interaction::default())
+                .drag_interaction(Interaction::default())
                 ].spacing(8).align_y(Center)
             ).style(container::bordered_box).padding(4)
         ].align_y(Center).height(Length::Fill).spacing(4);
@@ -707,7 +713,7 @@ impl App {
         if self.player.current_song.is_some() {       
             song_text = column![
                 scrollable(text(self.player.current_song.as_ref().unwrap().title.clone())
-                    .size(16).align_x(Alignment::Start).height(Length::Shrink)
+                    .size(16).align_x(Alignment::Start).line_height(LineHeight::Relative(1.4))
                     .wrapping(text::Wrapping::None))
                     .id(self.song_text_id.clone())
                     .style(song_scroll_style).width(210)
@@ -771,7 +777,7 @@ impl App {
         }).width(82).height(82).center(Length::Fixed(82.))
         }).into();
 
-        let controls = container(row![ar, column![top_controls, row![song_text.spacing(4), lower_controls]]].spacing(4))
+        let controls = container(row![ar, column![top_controls, row![song_text, lower_controls]]].spacing(4))
             .width(Fill)
             .height(Length::Fixed(90.))
             //.max_height(72)
