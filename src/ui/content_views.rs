@@ -1,4 +1,4 @@
-use iced::{gradient, padding, widget::{button, column, container, horizontal_space, image, lazy, pick_list, row, scrollable, svg, text, text::{LineHeight, Wrapping}, tooltip, Button, Column}, Alignment, Element, Length::{self, Fill, FillPortion, Shrink}, Theme};
+use iced::{gradient, padding, widget::{button, column, container, horizontal_space, image, lazy, pick_list, row, scrollable, svg, text, text::{LineHeight, Wrapping}, tooltip, Button, Column, Space}, Alignment, Element, Length::{self, Fill, FillPortion, Shrink}, Theme};
 use super::{app::{App, Message, IMG_SIZE}, icons::Icon};
 
 
@@ -259,7 +259,17 @@ pub fn collection_page(app: &App) -> Element<'_, Message> {
         CollectionView::Artists => artist_page(app),
         //_ => container("").into()
     };
-    column![header, container(content).height(Fill)].into()
+
+    let separator = 
+        container(Space::new(Fill, 2))
+        .style(|t: &Theme| {
+            let palette = t.extended_palette();
+            let mut style = container::Style::default();
+            style.background = Some(palette.background.strong.color.into());
+            style
+        }).width(Fill).height(2);
+
+    column![header, separator, container(content).height(Fill)].into()
     //container(header).height(Fill).into()
 }
 
@@ -268,8 +278,8 @@ fn header_style(theme: &Theme) -> container::Style {
     let mut style = container::Style::default();
     style.background = Some(palette.background.base.color.into());
     style.text_color = Some(palette.background.base.text.into());
-    style.border.radius = 6.0.into();
-    style.border.width = 2.;
+    style.border.radius = 0.0.into();
+    style.border.width = 0.;
     style.border.color = palette.background.strong.color;
     style
 }

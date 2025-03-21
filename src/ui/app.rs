@@ -5,7 +5,7 @@ use iced::mouse::Interaction;
 use iced::time::{self, milliseconds};
 
 use ahash::AHashMap;
-use iced::widget::{lazy, mouse_area, svg, Column};
+use iced::widget::{lazy, mouse_area, svg, vertical_space, Column};
 use iced::window::show_system_menu;
 use iced::{
     gradient, widget::{button, column, container, horizontal_space, image, row, scrollable, slider, slider::HandleShape, text, Button}, window::Settings, Alignment, Border, Center, Element, Length::{self, Fill}, Size, Theme};
@@ -15,7 +15,7 @@ use rodio::{source::EmptyCallback, OutputStream, Sink};
 use iced::futures::StreamExt;
 
 use iced::futures::Stream;
-use iced::{mouse, stream, window, Subscription, Task};
+use iced::{mouse, stream, window, Padding, Subscription, Task};
 
 use crate::musiclib::music_library::{self, AlbumKey, MusicLibrary, Song};
 use super::icons::Icon;
@@ -48,6 +48,20 @@ fn sidebar_button_style(theme: &Theme, status: button::Status) -> button::Style 
 }
 
 fn sidebar_style(theme: &Theme) -> container::Style {
+    let palette = theme.extended_palette();
+    container::Style {
+        background: Some(palette.background.base.color.into()),
+        border: Border {
+            width: 1.0,
+            radius: 0.0.into(),
+            color: palette.background.strong.color,
+            
+        },
+        ..container::Style::default()
+    }
+}
+
+fn content_container_style(theme: &Theme) -> container::Style {
     let palette = theme.extended_palette();
     container::Style {
         background: Some(palette.background.base.color.into()),
@@ -134,15 +148,46 @@ fn control_svg_style(theme: &Theme, status: svg::Status) -> svg::Style {
     lower_control_svg_style(theme, status, false)
 }
 
-fn sidebar_button(txt: &str, msg: ContentView) -> Button<'_, Message> {
-    button(text(txt)
-    .align_x(Center)
-    .align_y(Center))
-    .height(Length::Fixed(SIDEBAR_SIZE))
-    .width(Length::Fixed(SIDEBAR_SIZE))
-    .style(sidebar_button_style)
-    .on_press(Message::ContentChanged(msg))
-    .into()
+fn sidebar_button(icon: Option<Icon>, txt: &str, msg: ContentView) -> Button<'_, Message> {
+    if icon.is_some() {
+        let mut items = Column::new();
+        items = items.push(
+            svg(svg::Handle::from(icon.unwrap().icon_data()))
+            .height(SIDEBAR_SIZE/3.)
+            .width(SIDEBAR_SIZE/3.)
+            .style(titlebar_svg_style))
+            .align_x(Center);
+
+        items = items.push(text(txt)
+        .size(16)
+        .height(Fill)
+        .width(SIDEBAR_SIZE)
+        .align_x(Center)
+        .align_y(Center))
+        .align_x(Center);
+        button(items.height(SIDEBAR_SIZE).spacing(6))
+        .height(Length::Fixed(SIDEBAR_SIZE))
+        .width(Length::Fixed(SIDEBAR_SIZE))
+        .style(sidebar_button_style)
+        .on_press(Message::ContentChanged(msg))
+        .padding(Padding {
+            top: 14.,
+            right: 4.,
+            bottom: 14.,
+            left: 4.,
+        })
+        .into()
+    } else {
+        button(text(txt)
+        .align_x(Center)
+        .align_y(Center))
+        .height(Length::Fixed(SIDEBAR_SIZE))
+        .width(Length::Fixed(SIDEBAR_SIZE))
+        .style(sidebar_button_style)
+        .on_press(Message::ContentChanged(msg))
+        .into()
+    }
+
 }
 
 fn song_scroll_style(theme: &Theme, status: scrollable::Status) -> scrollable::Style {
@@ -237,12 +282,12 @@ enum PlayerState {
     Idle,
     Active
 }
-#[derive(PartialEq, Debug)]
-enum WindowState {
-    None,
-    Minimised,
-    Maximised
-}
+// #[derive(PartialEq, Debug)]
+// enum WindowState {
+//     None,
+//     Minimised,
+//     Maximised
+// }
 
 #[derive(PartialEq, Debug)]
 enum LoopState {
@@ -286,7 +331,7 @@ pub struct App {
     song_text_id: scrollable::Id,
     pub collection_view: CollectionView,
     window_id: Option<window::Id>,
-    window_state: WindowState,
+    //window_state: WindowState,
     title_clicked: bool,
     maximise_icon: Icon
 }
@@ -345,7 +390,7 @@ impl App {
             sender: None,
             song_text_id: scrollable::Id::unique(),
             window_id: None,
-            window_state: WindowState::None,
+            //window_state: WindowState::None,
             title_clicked: false,
             maximise_icon: Icon::Maximise
         }
@@ -557,26 +602,33 @@ impl App {
             Message::CollectionViewChange(view) => {
                 self.collection_view = view;
             }
-            _ => {}
+            //_ => {}
         }
         Task::none()
     }
     
     fn view(&self) -> Element<'_, Message> {
-
-        //container().
-        //button("A").
         let sidebar = 
-        container(scrollable(column![
-            sidebar_button("Queue", ContentView::Queue),
-            sidebar_button("Collection", ContentView::Collection),
-            sidebar_button("Settings", ContentView::Settings)
+        container(column![
+            sidebar_button(Some(Icon::Play) ,"Queue", ContentView::Queue),
+            sidebar_button(Some(Icon::Note), "Library", ContentView::Collection),
+            //---separator element
+            container(vertical_space())
+            .style(|t: &Theme| {
+                let mut style = container::Style::default();
+                style.border.width = 1.;
+                style.border.radius = 0.0.into();
+                style.border.color = t.extended_palette().background.strong.color;
+                style
+            }).height(Fill).width(Fill),
+            //---
+            sidebar_button(None, "Settings", ContentView::Settings)
             .height(30)
-            ])
-            
+            ]
         )
         .width(Length::Fixed(SIDEBAR_SIZE))
         .height(Fill)
+        .padding(0)
         .style(sidebar_style);
         
         let current_pos;
@@ -598,12 +650,12 @@ impl App {
         else {
             remaining_dur = "-:--:--".to_string();
         }
-        let content = match &self.current_view {
+        let content = container(match &self.current_view {
             ContentView::Queue => queue_page(self),
             ContentView::Collection => collection_page(self),
             ContentView::Settings => settings_page(self),
             //_ => {queue_page(self)}
-        };
+        }).style(content_container_style).padding(1);
 
         let toggle_data;
         if self.player.sink.is_paused() {
@@ -729,11 +781,18 @@ impl App {
         let main_area = column![content, controls]
             .width(Fill)
             .height(Fill);
-        
-        let mut titlebar = mouse_area(row![
-            text(self.title()),
-            horizontal_space(),
-        ].height(30))
+        let mut titlebar = mouse_area(
+            container(row![
+                svg(svg::Handle::from(Icon::Album.icon_data())).height(16).width(16).style(titlebar_svg_style),
+                text(self.title()).size(12).height(28).align_y(Alignment::Center),
+                horizontal_space(),
+            ]
+            .align_y(Alignment::Center)
+            .height(30)
+            .spacing(6)
+            )
+            .padding(4)
+        )
         .interaction(mouse::Interaction::None)
         .on_press(Message::Window(WindowMsg::TitlebarClick(true))) 
         .on_double_click(Message::Window(WindowMsg::MaximiseRequest))
@@ -751,12 +810,35 @@ impl App {
             titlebar_button(self.maximise_icon, &WindowMsg::MaximiseRequest),
             titlebar_button(Icon::Close, &WindowMsg::CloseWindow),
         ];
-        let decoration = container(bar).width(Fill).height(30);
+        let decoration = container(bar)
+        .width(Fill)
+        .height(30)
+        .padding(Padding {
+            top: 2.,
+            right: 2.,
+            bottom: 2.,
+            left: 4.,
+        })
+        .style(titlebar_style);
         
 
         // let lower_middle = mouse_area(container("").height(5).width(Fill)).interaction(Interaction::ResizingVertically);
         // let lower_border = row![lower_middle];
-        column![decoration, row![sidebar, main_area]].into()
+        column![decoration, container(row![sidebar, main_area])
+        .padding(Padding {
+            top: 0.,
+            right: 1.,
+            bottom: 1.,
+            left: 1.,
+        })
+        .style(|t| {
+            let palette = t.extended_palette();
+            let mut style = container::Style::default();
+            style.border.width = 2.;
+            style.border.color = palette.background.strong.color;
+            style
+        })
+        ].into()
 
     }
 
@@ -962,6 +1044,17 @@ pub enum ContentView {
     Collection
 }
 
+fn titlebar_style(theme: &Theme) -> container::Style {
+    let palette = theme.extended_palette();
+    let mut style = container::Style::default();
+    style.background = Some(palette.background.base.color.into());
+    style.text_color = Some(palette.background.base.text.into());
+    style.border.radius = 0.0.into();
+    style.border.width = 2.;
+    style.border.color = palette.background.strong.color;
+    style
+}
+
 
 fn titlebar_button_style(theme: &Theme, status: button::Status, exit: bool) -> button::Style {
     let palette = theme.extended_palette();
@@ -1039,6 +1132,5 @@ pub fn run() -> iced::Result {
     .theme(App::theme)
     .window(window_settings)
     .subscription(App::subscription)
-    .transparent(true)
     .run()
 }

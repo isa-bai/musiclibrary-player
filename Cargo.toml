@@ -1,7 +1,7 @@
 [package]
 name = "musiclibrary-player"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
 ahash = "0.8.11"
@@ -19,7 +19,8 @@ default-features = false
 features = [
     #"tiny-skia",
     "auto-detect-theme",
-    "fira-sans", "debug",
+    #"fira-sans",
+    #"debug",
     "wgpu",
     "image", "lazy", "tokio", "svg"]
 
@@ -44,11 +45,16 @@ incremental = false
 opt-level = 3
 overflow-checks = false
 strip = true
-
-[profile.small]
-inherits = "release-opts"
-opt-level = "s"
-strip = true
 panic = "abort"
 
-
+[profile.small]
+inherits = "release"
+opt-level = "z"
+debug = false
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
+#RUSTFLAGS="-Zlocation-detail=none" 
+#RUSTFLAGS="-Zfmt-debug=none"
+# "-Zlocation-detail=none -Zfmt-debug=none"
