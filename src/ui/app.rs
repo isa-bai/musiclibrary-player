@@ -651,12 +651,17 @@ impl App {
         else {
             remaining_dur = "-:--:--".to_string();
         }
+        
+        let mut content_padding = Padding::new(1.);
         let content = container(match &self.current_view {
-            ContentView::Queue => queue_page(self),
+            ContentView::Queue => {
+                content_padding = Padding { top: 1., right: 1., bottom: 0. , left: 1. };
+                queue_page(self)
+            },
             ContentView::Collection => collection_page(self),
             ContentView::Settings => settings_page(self),
             //_ => {queue_page(self)}
-        }).style(content_container_style).padding(1);
+        }).style(content_container_style).padding(content_padding);
 
         let toggle_data;
         if self.player.sink.is_paused() {

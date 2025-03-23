@@ -63,12 +63,6 @@ pub fn album_page(app: &App) -> Element<'_, Message> {
     
 }
 
-// #[derive(Debug, Clone)]
-// enum ArtistPageMessage {
-//     Expand,
-//     Close
-// }
-
 pub fn artist_page(app: &App) -> Element<'_, Message> {
     let list = container(scrollable(
         column(
@@ -92,7 +86,6 @@ pub fn artist_page(app: &App) -> Element<'_, Message> {
 
 }
 
-
 pub fn queue_page(app: &App) -> Element<'_, Message> {
 
     let clearbtn: Button<'_, Message> = match app.player.next_appended {
@@ -101,8 +94,7 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
     };
     let header = container(
         row![
-            button("None")
-            .height(36),
+            horizontal_space().width(56),
             horizontal_space(),
             text("Queue")
                 .width(Fill)
@@ -124,7 +116,7 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
             .width(FillPortion(260))
             .clip(true)
             .padding(padding::Padding {top: 0.,right: 4.,bottom: 0.,left: 4.,}),
-            container(text("Artist").wrapping(Wrapping::None)).style(container::bordered_box).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos, app.player.queue_cleared))
+            container(text("Artist").wrapping(Wrapping::None)).style(move |t|queue_style(t, usize::MAX, app.player.queue_pos, app.player.queue_cleared))
             .width(FillPortion(200))
             .clip(true)
             .padding(padding::Padding {top: 0.,right: 4.,bottom: 0.,left: 4.,}),
@@ -138,7 +130,7 @@ pub fn queue_page(app: &App) -> Element<'_, Message> {
 
 
     let mut l: Column<'_, Message> = Column::new();
-
+    
     
     for (i, song) in app.player.song_queue.iter().enumerate(){
         let item = row![
@@ -211,10 +203,6 @@ pub fn songs_page(_app: &App) -> Element<'_, Message> {
     .width(Fill)
     .height(Fill)
     .padding(10).into()
-    // container("many settings !")
-    // .width(Fill)
-    // .height(Fill)
-    // .padding(10).into()
 }
 
 pub fn settings_page(app: &App) -> Element<'_, Message> {
