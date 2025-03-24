@@ -1121,9 +1121,6 @@ fn titlebar_svg_style(theme: &Theme, _status: svg::Status) -> svg::Style {
 
 fn format_duration(dur: Duration) -> String {
     let total_seconds = dur.as_secs();
-    //let milliseconds = self.duration.subsec_millis();
-
-    //let hours = total_seconds / 3600;
     let minutes = (total_seconds % 3600) / 60;
     let seconds = total_seconds % 60;
 
