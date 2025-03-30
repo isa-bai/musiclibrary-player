@@ -8,7 +8,7 @@ use image::{imageops::FilterType, DynamicImage};
 use jwalk::WalkDir;
 //use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use symphonia::core:: meta::StandardTagKey;
-use super::symphonia_probe;
+use super::metadata_probe;
 
 #[derive(Default, Clone, Debug)]
 pub struct Song {
@@ -24,9 +24,6 @@ pub struct Song {
 impl Song {
     pub fn format_duration(&self) -> String {
         let total_seconds = self.duration.as_secs();
-        //let milliseconds = self.duration.subsec_millis();
-    
-        //let hours = total_seconds / 3600;
         let minutes = (total_seconds % 3600) / 60;
         let seconds = total_seconds % 60;
     
@@ -276,7 +273,7 @@ async fn probe_file(
     count: Arc<Mutex<i32>>,
     img_size: u32
 ) {
-    if let (Some(m), dur ) = symphonia_probe::probe_metadata(&entry) {
+    if let (Some(m), dur ) = metadata_probe::probe_metadata(&entry) {
         let mut current_song = Song::default();
         let mut album_key = AlbumKey::default();
         current_song.file_path = entry;
