@@ -1,2 +1,4 @@
 /target
 .vs
+.vscode
+/src/discord/CLIENT_ID

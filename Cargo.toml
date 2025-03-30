@@ -1,12 +1,12 @@
 [package]
 name = "musiclibrary-player"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 ahash = "0.8.11"
+discord-rich-presence = "0.2.5"
 image = "0.25.5"
-# iced = {version = "0.13.1", features = ["debug"]}
 jwalk = "0.8.1"
 lazy_static = "1.5.0"
 symphonia = { version = "0.5.4", features = ["all", "opt-simd"] }
@@ -14,7 +14,6 @@ tokio = { version = "1.44.1", features = ["rt-multi-thread"] }
 
 [dependencies.iced]
 git = "https://github.com/isa-bai/iced"
-#rev = "bae25b74f68078e5ff74cdae717273cf315d4e90"
 default-features = false
 features = [
     #"tiny-skia",
@@ -29,12 +28,6 @@ git = "https://github.com/RustAudio/rodio.git"
 rev = "64cf70b45b3097ca10ca72eccceaddbb937b24e2"
 default-features = false
 features = ["playback", "symphonia", "symphonia-all"]
-
-# [profile.dev]
-# opt-level = 0
-
-# [profile.debug2]
-# inherits = "dev"
 
 [profile.release-opts]
 inherits = "release"

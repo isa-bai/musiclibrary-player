@@ -18,9 +18,12 @@ use iced::futures::StreamExt;
 use iced::futures::Stream;
 use iced::{mouse, stream, window, Padding, Subscription, Task};
 
+use crate::discord::presence::{DiscordClient, DiscordMessage, PresenceData};
 use crate::musiclib::music_library::{self, AlbumKey, MusicLibrary, Song};
 use super::icons::Icon;
 use super::content_views::{collection_page, queue_page, settings_page, CollectionView};
+
+
 
 const SIDEBAR_SIZE: f32 = 80.;
 
@@ -241,7 +244,8 @@ fn top_control_button(kind: ButtonType, msg: &ControlMsg) -> Button<'_, Message>
 #[derive(Debug, Clone)]
 pub enum Message {
     Window(WindowMsg),
-    BackgroundWorker(Sender<Message>),
+    SongChangeWorker(Sender<Message>),
+    DiscordWorker(Sender<DiscordMessage>),
     ThemeChanged(Theme),
     ContentChanged(ContentView),
     CollectionViewChange(CollectionView),
@@ -328,7 +332,8 @@ pub struct App {
     pub player: Player,
     pub version: u32,
     pub durtick: u32,
-    pub sender: Option<Sender<Message>>,
+    pub song_update_sender: Option<Sender<Message>>,
+    pub discord_sender: Option<Sender<DiscordMessage>>,
     song_text_id: scrollable::Id,
     pub collection_view: CollectionView,
     window_id: Option<window::Id>,
@@ -388,7 +393,8 @@ impl App {
             imghandles: ih,
             version: 0,
             durtick: 0,
-            sender: None,
+            song_update_sender: None,
+            discord_sender: None,
             song_text_id: scrollable::Id::unique(),
             window_id: None,
             //window_state: WindowState::None,
@@ -451,11 +457,14 @@ impl App {
                         return show_system_menu(self.window_id.unwrap());
                     }
                 }
-            }
-            Message::BackgroundWorker(sender) => {
-                self.sender = Some(sender);
+            },
+            Message::SongChangeWorker(sender) => {
+                self.song_update_sender = Some(sender);
                 return window::get_latest().map(|f| Message::Window(WindowMsg::SetWindowId(f)));
-            }
+            },
+            Message::DiscordWorker(sender) => {
+                self.discord_sender = Some(sender);
+            },
             Message::ThemeChanged(theme) => {
                 self.theme = theme;
             },
@@ -478,6 +487,7 @@ impl App {
                         } else {
                             self.player.sink.pause();
                         }
+                        self.update_discord_presence();
 
                     },
                     ControlMsg::Stop => {
@@ -495,7 +505,7 @@ impl App {
                                 self.player.sink.stop();
                                 let src  = rodio::Decoder::new(BufReader::new(file)).unwrap();
                                 self.player.sink.append(src);
-                                let sender = self.sender.as_ref().unwrap().clone();
+                                let sender = self.song_update_sender.as_ref().unwrap().clone();
                                 self.player.sink.append(EmptyCallback::new(Box::new(move || {
                                     //send Message::SongFinished to the update loop
                                     _ = sender.clone().try_send(Message::SongFinished);
@@ -504,6 +514,7 @@ impl App {
                                 //might be courteous to return the user to where they were before trying to seek
                             }
                             self.player.next_appended = false;
+                            self.update_discord_presence();
                             return Task::none();
                         }
                         //if more than 4 seconds into song or no previous song go to start, else go last song
@@ -519,6 +530,7 @@ impl App {
                             self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
                             self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
                         }
+                        self.update_discord_presence();
                     },
                     ControlMsg::Sliding(val) => {
                         self.player.sliding = true;
@@ -529,8 +541,6 @@ impl App {
                         if !self.player.next_appended {
                             self.seek(val);
                         }
-
-                        //self.player.sink
                     },
                     ControlMsg::UpdateDuration => {
                         if let Some(song) = &self.player.current_song {
@@ -587,6 +597,8 @@ impl App {
             Message::SongFinished => {
                 //println!("song finished");
                 self.get_next_song();
+                self.update_discord_presence();
+
             }
             Message::AddAlbumToQueue(key) => {
                 if let Some(info) = self.library.get_albuminfo(&key) {
@@ -857,6 +869,7 @@ impl App {
         self.player.sink.stop();
         self.player.sink.pause();
         self.player.current_song = None;
+        self.update_discord_presence();
         //if clear_queue {self.player.song_queue.clear();}
         self.player.next_appended = false;
         if self.player.state == PlayerState::Active {self.player.state = PlayerState::Idle};
@@ -931,13 +944,36 @@ impl App {
 
         
         self.player.sink.append(src);
-        let sender = self.sender.as_ref().unwrap().clone();
+        let sender = self.song_update_sender.as_ref().unwrap().clone();
         self.player.sink.append(EmptyCallback::new(Box::new(move || {
             //send Message::SongFinished to the update loop
             _ = sender.clone().try_send(Message::SongFinished);
         })));
         //if !self.player.next_appended {self.player.current_song = Some(song);}
             
+        }
+    }
+
+    fn update_discord_presence(&mut self) {
+        if self.discord_sender.is_some() {
+
+            if self.player.current_song.is_none() || self.player.sink.is_paused() {
+
+                _ = self.discord_sender.as_ref().unwrap().clone()
+                .try_send(DiscordMessage::ClearPresence);
+
+            } else {
+
+                _ = self.discord_sender.as_ref().unwrap().clone()
+                .try_send(DiscordMessage::SetPresence(PresenceData {
+                    artist: self.player.current_song.as_ref().unwrap().artists.join(" / "),
+                    song_title: self.player.current_song.as_ref().unwrap().title.to_owned(),
+                    album_title: self.player.current_song.as_ref().unwrap().album_title.to_owned(),
+                    current_pos: self.player.sink.get_pos().as_secs(),
+                    song_duration: self.player.current_song.as_ref().unwrap().duration.as_secs(),
+                }));
+
+            }
         }
     }
 
@@ -954,14 +990,63 @@ impl App {
                     })
                 }
             }
-        }; 
+        };
+
+        fn discord_update() -> impl Stream<Item = Message> {
+            stream::channel(100, async |mut output| {
+                // Create channel
+                
+                let mut client = DiscordClient::new();
+                let mut i = 0;
+                let (sender, mut receiver) = mpsc::channel::<DiscordMessage>(100);
+                // Send the sender back to the application
+                _ = output.send(Message::DiscordWorker(sender)).await;
+                
+                client.block_until_connected();
+        
+                loop {
+                    let mut final_msg = receiver.next().await;
+                    // discard all but the final message
+                    while let Ok(msg) = receiver.try_next() {
+                        final_msg = Some(msg.unwrap());
+                        //println!("iterating loop msg");
+                    }
+
+                    //println!("msg recieved {}", i);
+                    i += 1;
+                    println!("{:?}", final_msg);
+
+                    if final_msg.is_some() {
+
+                        let res = match final_msg.unwrap() {
+                            DiscordMessage::SetPresence(presence_data) => {
+                                client.set_presence(presence_data)
+                            },
+                            DiscordMessage::ClearPresence => {
+                                client.clear_presence()
+                            }
+                        };
+
+                        match res {
+                            Ok(_) => {},
+                            Err(_) => {
+                                client.shutdown();
+                                client.block_until_connected();
+                            }
+                        }
+                    }
+                    //println!("loop end");
+                }
+
+            })
+        }
         
         fn playback_updater() -> impl Stream<Item = Message> {
             stream::channel(100, async |mut output| {
                 // Create channel
                 let (sender, mut receiver) = mpsc::channel::<Message>(100);
                 // Send the sender back to the application
-                _ = output.send(Message::BackgroundWorker(sender)).await;
+                _ = output.send(Message::SongChangeWorker(sender)).await;
         
                 loop {
                     _ = receiver.next().await;  
@@ -970,10 +1055,11 @@ impl App {
             })
         }
 
-
         let worker_subscription = Subscription::run(playback_updater);
+        let discord_subscription = Subscription::run(discord_update);
 
-        Subscription::batch(vec![duration_update, worker_subscription])
+        Subscription::batch(vec![duration_update, discord_subscription, worker_subscription])
+
     }
 
    fn seek(&mut self, pos: f32) {
@@ -987,7 +1073,7 @@ impl App {
                 self.player.sink.stop();
                 let src  = rodio::Decoder::new(BufReader::new(file)).unwrap();
                 self.player.sink.append(src);
-                let sender = self.sender.as_ref().unwrap().clone();
+                let sender = self.song_update_sender.as_ref().unwrap().clone();
                 self.player.sink.append(EmptyCallback::new(Box::new(move || {
                     //send Message::SongFinished to the update loop
                     _ = sender.clone().try_send(Message::SongFinished);
@@ -997,6 +1083,7 @@ impl App {
                 if pos > 0. {_ = self.player.sink.try_seek(Duration::from_secs_f32(seek_pos));}
             }
         }
+        self.update_discord_presence();
     }
 } 
     

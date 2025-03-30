@@ -2,6 +2,7 @@
 
 mod ui;
 mod musiclib;
+mod discord;
 
 
 fn main() {
