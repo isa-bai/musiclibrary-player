@@ -1,3 +1,4 @@
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{collections::VecDeque, io::BufReader, time::Duration};
 use iced::futures::channel::mpsc::{self, Sender};
 use iced::futures::SinkExt;
@@ -18,7 +19,7 @@ use iced::futures::StreamExt;
 use iced::futures::Stream;
 use iced::{mouse, stream, window, Padding, Subscription, Task};
 
-use crate::discord::presence::{DiscordClient, DiscordMessage, PresenceData};
+use crate::discord::presence::{get_cover_art, DiscordClient, DiscordMessage, PresenceData};
 use crate::musiclib::music_library::{self, AlbumKey, MusicLibrary, Song};
 use super::icons::Icon;
 use super::content_views::{collection_page, queue_page, settings_page, CollectionView};
@@ -963,15 +964,16 @@ impl App {
                 .try_send(DiscordMessage::ClearPresence);
 
             } else {
-
+                let start = SystemTime::now().duration_since(UNIX_EPOCH.into())
+                .unwrap().as_secs();
                 _ = self.discord_sender.as_ref().unwrap().clone()
-                .try_send(DiscordMessage::SetPresence(PresenceData {
+                .try_send(DiscordMessage::SetPresence((PresenceData {
                     artist: self.player.current_song.as_ref().unwrap().artists.join(" / "),
                     song_title: self.player.current_song.as_ref().unwrap().title.to_owned(),
                     album_title: self.player.current_song.as_ref().unwrap().album_title.to_owned(),
                     current_pos: self.player.sink.get_pos().as_secs(),
                     song_duration: self.player.current_song.as_ref().unwrap().duration.as_secs(),
-                }));
+                }, start)));
 
             }
         }
@@ -994,11 +996,15 @@ impl App {
 
         fn discord_update() -> impl Stream<Item = Message> {
             stream::channel(100, async |mut output| {
-                // Create channel
                 
                 let mut client = DiscordClient::new();
-                let mut i = 0;
+
+                let mut current_img: String = "".to_owned();
+                let mut current_album: String = "".to_owned();
+                let mut current_artist: String = "".to_owned();
+
                 let (sender, mut receiver) = mpsc::channel::<DiscordMessage>(100);
+                
                 // Send the sender back to the application
                 _ = output.send(Message::DiscordWorker(sender)).await;
                 
@@ -1012,15 +1018,21 @@ impl App {
                         //println!("iterating loop msg");
                     }
 
-                    //println!("msg recieved {}", i);
-                    i += 1;
-                    println!("{:?}", final_msg);
 
                     if final_msg.is_some() {
-
+                        let mut data: Option<PresenceData> = None;
                         let res = match final_msg.unwrap() {
-                            DiscordMessage::SetPresence(presence_data) => {
-                                client.set_presence(presence_data)
+                            DiscordMessage::SetPresence((presence_data, start)) => {
+
+                                if presence_data.album_title != current_album || presence_data.artist != current_artist {
+                                    if let Ok(res) = get_cover_art(&presence_data.album_title, &presence_data.artist).await {
+                                        current_img = res;
+                                    }
+                                }
+
+                                let r = client.set_presence(&presence_data, &current_img, start);
+                                data = Some(presence_data);
+                                r
                             },
                             DiscordMessage::ClearPresence => {
                                 client.clear_presence()
@@ -1028,7 +1040,13 @@ impl App {
                         };
 
                         match res {
-                            Ok(_) => {},
+                            Ok(_) => {
+                                if data.is_some() {
+                                    current_album = data.as_ref().unwrap().album_title.to_owned();
+                                    current_artist = data.unwrap().artist;
+                                }
+                                
+                            },
                             Err(_) => {
                                 client.shutdown();
                                 client.block_until_connected();
