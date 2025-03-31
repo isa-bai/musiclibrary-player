@@ -208,13 +208,13 @@ fn song_scroll_style(theme: &Theme, status: scrollable::Status) -> scrollable::S
 
 
 pub enum ButtonType {
-    Text(String),
+    _Text(String),
     Svg(Icon)
 }
 
 fn top_control_button(kind: ButtonType, msg: &ControlMsg) -> Button<'_, Message> {
     match kind {
-        ButtonType::Text(txt) => {
+        ButtonType::_Text(txt) => {
             button(text(txt)
             .align_x(Center)
             .align_y(Center)
@@ -999,9 +999,9 @@ impl App {
                 
                 let mut client = DiscordClient::new();
 
-                let mut current_img: String = "".to_owned();
-                let mut current_album: String = "".to_owned();
-                let mut current_artist: String = "".to_owned();
+                let mut current_img: String = String::new();
+                let mut current_album: String = String::new();
+                let mut current_artist: String = String::new();
 
                 let (sender, mut receiver) = mpsc::channel::<DiscordMessage>(100);
                 
@@ -1119,7 +1119,7 @@ fn lower_control_button(&self, kind: ButtonType, msg: ControlMsg) -> Button<'_, 
     }
 
     match kind {
-        ButtonType::Text(txt) => {
+        ButtonType::_Text(txt) => {
             button(text(txt)
             .align_x(Center)
             .align_y(Center)

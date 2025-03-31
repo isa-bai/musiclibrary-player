@@ -1,22 +1,52 @@
+use std::sync::LazyLock;
+
 use iced::widget::svg::{self, Handle};
-use lazy_static::lazy_static;
-lazy_static! {
-    pub static ref PLAY_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/play.svg").to_vec());
-    pub static ref PAUSE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/paused.svg").to_vec());
-    pub static ref STOP_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/stop.svg").to_vec());
-    pub static ref FORWARD_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/forward.svg").to_vec());
-    pub static ref BACK_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/back.svg").to_vec());
-    pub static ref LOOP_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/loop.svg").to_vec());
-    pub static ref LOOP1_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/loop1.svg").to_vec());
-    pub static ref SHUFFLE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/shuffle.svg").to_vec());
-    pub static ref NOTE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/note.svg").to_vec());
-    pub static ref ALBUM_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/album.svg").to_vec());
-    pub static ref ARTIST_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/artist.svg").to_vec());
-    pub static ref MINIMISE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/minimise.svg").to_vec());
-    pub static ref MAXIMISE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/maximise.svg").to_vec());
-    pub static ref UNMAXIMISE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/unmaximise.svg").to_vec());
-    pub static ref CLOSE_ICON: Handle = Handle::from_memory(include_bytes!("../../assets/close.svg").to_vec());
-}
+
+pub static PLAY_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/play.svg").to_vec())
+});
+pub static PAUSE_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/paused.svg").to_vec())
+});
+pub static STOP_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/stop.svg").to_vec())
+});
+pub static FORWARD_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/forward.svg").to_vec())
+});
+pub static BACK_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/back.svg").to_vec())
+});
+pub static LOOP_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/loop.svg").to_vec())
+});
+pub static LOOP1_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/loop1.svg").to_vec())
+});
+pub static SHUFFLE_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/shuffle.svg").to_vec())
+});
+pub static NOTE_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/note.svg").to_vec())
+});
+pub static ALBUM_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/album.svg").to_vec())
+});
+pub static ARTIST_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/artist.svg").to_vec())
+});
+pub static MINIMISE_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/minimise.svg").to_vec())
+});
+pub static MAXIMISE_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/maximise.svg").to_vec())
+});
+pub static UNMAXIMISE_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/unmaximise.svg").to_vec())
+});
+pub static CLOSE_ICON: LazyLock<Handle> = LazyLock::new(|| {
+    Handle::from_memory(include_bytes!("../../assets/close.svg").to_vec())
+});
 
 #[derive(Clone, Copy)]
 pub enum Icon {

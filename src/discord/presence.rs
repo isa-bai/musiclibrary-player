@@ -1,4 +1,4 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use discord_rich_presence::{activity::{Activity, ActivityType, Assets, Timestamps}, DiscordIpc, DiscordIpcClient};
 use reqwest::Client;
@@ -33,7 +33,7 @@ impl DiscordClient {
         }
     }
 
-    pub fn connect(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn _connect(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         self.client.connect()
     }
 
@@ -55,7 +55,7 @@ impl DiscordClient {
     }
 
     pub fn shutdown(&mut self) {
-        self.client.close();
+        _ = self.client.close();
     } 
 
     pub fn clear_presence(&mut self) -> Result<(), Box<dyn std::error::Error>> {
@@ -103,5 +103,5 @@ pub async fn get_cover_art(album: &str, artist: &str) -> Result<String, reqwest:
     }
     
 
-    return Ok("".to_string());
+    return Ok(String::new());
 }
