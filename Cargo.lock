@@ -2596,12 +2596,12 @@ dependencies = [
  "iced",
  "image",
  "jwalk",
- "lazy_static",
  "reqwest",
  "rodio",
  "serde_json",
  "symphonia",
  "tokio",
+ "toml_edit",
 ]
 
 [[package]]
