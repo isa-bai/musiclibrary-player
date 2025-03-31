@@ -4,6 +4,8 @@ use discord_rich_presence::{activity::{Activity, ActivityType, Assets, Timestamp
 use reqwest::Client;
 use serde_json::Value;
 
+use crate::config::{DEFAULT_DP_CLIENTID, PROGRAM_CFG};
+
 #[derive(Debug)]
 pub enum DiscordMessage {
     //artist, song title, current pos, song duration
@@ -16,6 +18,7 @@ pub struct PresenceData {
     pub artist: String,
     pub song_title: String,
     pub album_title: String,
+    pub album_artist: String,
     pub current_pos: u64,
     pub song_duration: u64
 }
@@ -28,8 +31,12 @@ pub struct DiscordClient {
 
 impl DiscordClient {
     pub fn new() -> Self {
+        let client = match DiscordIpcClient::new(PROGRAM_CFG.discord_client_id()) {
+            Ok(c) => c,
+            Err(_) => DiscordIpcClient::new(DEFAULT_DP_CLIENTID).unwrap()
+        };
         Self {
-            client: DiscordIpcClient::new(include_str!("./CLIENT_ID")).unwrap()
+            client
         }
     }
 
@@ -39,7 +46,6 @@ impl DiscordClient {
 
     pub fn set_presence(&mut self, data: &PresenceData, img: &str, mut start: u64) -> Result<(), Box<dyn std::error::Error>> {
         start = start - data.current_pos;
-        println!("{}", img);
         self.client.set_activity(Activity::new()
             .state(&data.artist) //artist
             .details(&data.song_title) //song title
@@ -81,23 +87,19 @@ pub async fn get_cover_art(album: &str, artist: &str) -> Result<String, reqwest:
     let client = Client::builder()
     .user_agent("musiclibrary-player").build()?;
 
-    let url = format!("https://musicbrainz.org/ws/2/release/?query=artist:{artist}%20AND%20release:{album}&fmt=json");
+    let url = format!("https://musicbrainz.org/ws/2/release-group/?query=artist:\"{artist}\"%20AND%20release:\"{album}\"&fmt=json");
     let start = std::time::Instant::now();
     let response = client.get(url).send().await?;
 
     let response_json: Value = response.json().await?;
 
-    if let Some(releases) = response_json.get("releases").and_then(Value::as_array) {
+    if let Some(releases) = response_json.get("release-groups").and_then(Value::as_array) {
         for release in releases {
-            if let Some(id) = release.get("id").and_then(Value::as_str) {
-                println!("{}", start.elapsed().as_millis());
-                //return Ok(format!("https://coverartarchive.org/release/{id}/front"));
-                let res = client.head(format!("https://coverartarchive.org/release/{id}/front")).send().await;
-                if res.is_ok() {
-                    if res.as_ref().unwrap().status().is_success() {
-                        return Ok(format!("{}", res.unwrap().url()));
-                    }
+            if let Some(_) = release.get("primary-type").filter(|t| *t == "Album") {
+                if let Some(id) = release.get("id").and_then(Value::as_str) {
+                    return Ok(format!("https://coverartarchive.org/release-group/{id}/front-250"));
                 }
+
             }
         }
     }

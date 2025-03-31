@@ -19,6 +19,7 @@ use iced::futures::StreamExt;
 use iced::futures::Stream;
 use iced::{mouse, stream, window, Padding, Subscription, Task};
 
+use crate::config::PROGRAM_CFG;
 use crate::discord::presence::{get_cover_art, DiscordClient, DiscordMessage, PresenceData};
 use crate::musiclib::music_library::{self, AlbumKey, MusicLibrary, Song};
 use super::icons::Icon;
@@ -338,7 +339,6 @@ pub struct App {
     song_text_id: scrollable::Id,
     pub collection_view: CollectionView,
     window_id: Option<window::Id>,
-    //window_state: WindowState,
     title_clicked: bool,
     maximise_icon: Icon
 }
@@ -347,12 +347,10 @@ pub struct App {
 impl App {
     fn new() -> Self {
 
-        let mut lib = music_library::scan_library("C:/Users/Isaac/Music".to_string(), IMG_SIZE);
-        //let stream_handle = rodio::OutputStreamBuilder::open_default_stream().unwrap();
+        let mut lib = music_library::scan_library(PROGRAM_CFG.library_path(), IMG_SIZE);
         let stream_handle = rodio::OutputStreamBuilder::open_default_stream().unwrap();
         let sink = rodio::Sink::connect_new(stream_handle.mixer());
         sink.pause();
-        //let (queue, queue_handle) = queue::queue(true);
         //pull all the album art out of the lib structure, clone, then delete
         let mut ih = AHashMap::new();
         for (key, info) in lib.get_all_albums().iter_mut() {
@@ -971,6 +969,7 @@ impl App {
                     artist: self.player.current_song.as_ref().unwrap().artists.join(" / "),
                     song_title: self.player.current_song.as_ref().unwrap().title.to_owned(),
                     album_title: self.player.current_song.as_ref().unwrap().album_title.to_owned(),
+                    album_artist: self.player.current_song.as_ref().unwrap().artists[0].to_owned(),
                     current_pos: self.player.sink.get_pos().as_secs(),
                     song_duration: self.player.current_song.as_ref().unwrap().duration.as_secs(),
                 }, start)));
@@ -1024,8 +1023,8 @@ impl App {
                         let res = match final_msg.unwrap() {
                             DiscordMessage::SetPresence((presence_data, start)) => {
 
-                                if presence_data.album_title != current_album || presence_data.artist != current_artist {
-                                    if let Ok(res) = get_cover_art(&presence_data.album_title, &presence_data.artist).await {
+                                if presence_data.album_title != current_album || presence_data.album_artist != current_artist {
+                                    if let Ok(res) = get_cover_art(&presence_data.album_title, &presence_data.album_artist).await {
                                         current_img = res;
                                     }
                                 }
@@ -1043,7 +1042,7 @@ impl App {
                             Ok(_) => {
                                 if data.is_some() {
                                     current_album = data.as_ref().unwrap().album_title.to_owned();
-                                    current_artist = data.unwrap().artist;
+                                    current_artist = data.unwrap().album_artist;
                                 }
                                 
                             },
@@ -1075,8 +1074,11 @@ impl App {
 
         let worker_subscription = Subscription::run(playback_updater);
         let discord_subscription = Subscription::run(discord_update);
-
-        Subscription::batch(vec![duration_update, discord_subscription, worker_subscription])
+        let mut subs = vec![duration_update, worker_subscription];
+        if PROGRAM_CFG.discord_rp_enabled() {
+            subs.push(discord_subscription);
+        }
+        Subscription::batch(subs)
 
     }
 

@@ -5,7 +5,7 @@ use toml_edit::DocumentMut;
 const DEFAULT_LIB_PATH: &str = "./";
 
 const DEFAULT_DP_ENABLED: bool = true;
-const DEFAULT_DP_CLIENTID: &str = "1354688246654697712";
+pub const DEFAULT_DP_CLIENTID: &str = "1354688246654697712";
 
 
 const DEFAULT_WS_ENABLED: bool = true;
@@ -177,6 +177,18 @@ impl ProgramConfig {
 
         config
 
+    }
+
+    pub fn library_path(&self) -> &str {
+        &self.library_opts.path
+    }
+
+    pub fn discord_rp_enabled(&self) -> bool {
+        self.discord_opts.enabled
+    }
+
+    pub fn discord_client_id(&self) -> &str {
+        &self.discord_opts.client_id
     }
 
 }

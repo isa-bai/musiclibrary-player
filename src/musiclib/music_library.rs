@@ -206,11 +206,15 @@ impl MusicLibrary {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.artists.len() == 0
+    }
+
 
 
 }
 
-pub fn scan_library(path: String, img_size: u32) -> MusicLibrary {  
+pub fn scan_library(path: &str, img_size: u32) -> MusicLibrary {  
 
     //_________________Creating Library Structs
 
