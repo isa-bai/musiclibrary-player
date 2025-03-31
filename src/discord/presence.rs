@@ -88,7 +88,6 @@ pub async fn get_cover_art(album: &str, artist: &str) -> Result<String, reqwest:
     .user_agent("musiclibrary-player").build()?;
 
     let url = format!("https://musicbrainz.org/ws/2/release-group/?query=artist:\"{artist}\"%20AND%20release:\"{album}\"&fmt=json");
-    let start = std::time::Instant::now();
     let response = client.get(url).send().await?;
 
     let response_json: Value = response.json().await?;

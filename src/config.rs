@@ -9,7 +9,7 @@ pub const DEFAULT_DP_CLIENTID: &str = "1354688246654697712";
 
 
 const DEFAULT_WS_ENABLED: bool = true;
-const DEFAULT_WS_PORT: u32 = 31466;
+pub const DEFAULT_WS_PORT: u16 = 31466;
 
 
 const DEFAULT_CFG: LazyLock<String> = LazyLock::new(|| {
@@ -62,7 +62,7 @@ impl Default for LibraryOptions {
 #[derive(Debug)]
 struct WebsocketOptions {
     enabled: bool,
-    port: u32
+    port: u16
 }
 
 impl Default for WebsocketOptions {
@@ -164,7 +164,7 @@ impl ProgramConfig {
                         if v.is_integer() {
                             match v.as_integer() {
                                 Some(val) => {
-                                    if val <= u32::MAX.into() && val >= u32::MIN.into() {config.websocket_opts.port = val as u32};
+                                    if val <= u16::MAX.into() && val >= u16::MIN.into() {config.websocket_opts.port = val as u16};
                                 },
                                 None => {}
                             }
@@ -189,6 +189,14 @@ impl ProgramConfig {
 
     pub fn discord_client_id(&self) -> &str {
         &self.discord_opts.client_id
+    }
+
+    pub fn ws_enabled(&self) -> bool {
+        self.websocket_opts.enabled
+    }
+
+    pub fn ws_port(&self) -> &u16 {
+        &self.websocket_opts.port
     }
 
 }

@@ -4,6 +4,7 @@ mod ui;
 mod musiclib;
 mod discord;
 mod config;
+mod websocket;
 
 
 fn main() {

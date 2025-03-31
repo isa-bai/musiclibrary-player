@@ -1057,7 +1057,7 @@ impl App {
 
             })
         }
-        
+
         fn playback_updater() -> impl Stream<Item = Message> {
             stream::channel(100, async |mut output| {
                 // Create channel
@@ -1074,10 +1074,12 @@ impl App {
 
         let worker_subscription = Subscription::run(playback_updater);
         let discord_subscription = Subscription::run(discord_update);
+
         let mut subs = vec![duration_update, worker_subscription];
         if PROGRAM_CFG.discord_rp_enabled() {
             subs.push(discord_subscription);
         }
+
         Subscription::batch(subs)
 
     }
