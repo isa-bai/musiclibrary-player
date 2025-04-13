@@ -3,49 +3,49 @@ use std::sync::LazyLock;
 use iced::widget::svg::{self, Handle};
 
 const PLAY_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/play.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/play.svg"))
 });
 const PAUSE_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/paused.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/paused.svg"))
 });
 const STOP_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/stop.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/stop.svg"))
 });
 const FORWARD_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/forward.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/forward.svg"))
 });
 const BACK_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/back.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/back.svg"))
 });
 const LOOP_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/loop.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/loop.svg"))
 });
 const LOOP1_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/loop1.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/loop1.svg"))
 });
 const SHUFFLE_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/shuffle.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/shuffle.svg"))
 });
 const NOTE_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/note.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/note.svg"))
 });
 const ALBUM_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/album.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/album.svg"))
 });
 const ARTIST_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/artist.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/artist.svg"))
 });
 const MINIMISE_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/minimise.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/minimise.svg"))
 });
 const MAXIMISE_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/maximise.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/maximise.svg"))
 });
 const UNMAXIMISE_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/unmaximise.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/unmaximise.svg"))
 });
 const CLOSE_ICON: LazyLock<Handle> = LazyLock::new(|| {
-    Handle::from_memory(include_bytes!("../../assets/close.svg").to_vec())
+    Handle::from_memory(include_bytes!("../../assets/close.svg"))
 });
 
 #[derive(Clone, Copy)]

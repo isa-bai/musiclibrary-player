@@ -33,6 +33,9 @@ rev = "64cf70b45b3097ca10ca72eccceaddbb937b24e2"
 default-features = false
 features = ["playback", "symphonia", "symphonia-all"]
 
+[profile.dev]
+opt-level = 0
+
 [profile.release-opts]
 inherits = "release"
 codegen-units = 1

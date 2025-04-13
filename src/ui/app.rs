@@ -447,7 +447,8 @@ impl App {
                         }
                     }
                     WindowMsg::CloseWindow => {
-                        return window::close(self.window_id.unwrap());
+                        std::process::exit(0);
+                        //return window::close(self.window_id.unwrap());
                     }
                     WindowMsg::SetWindowId(id) => {
                         self.window_id = id;
@@ -842,8 +843,8 @@ impl App {
             left: 4.,
         })
         .style(titlebar_style);
+    
         
-
         // let lower_middle = mouse_area(container("").height(5).width(Fill)).interaction(Interaction::ResizingVertically);
         // let lower_border = row![lower_middle];
         column![decoration, container(row![sidebar, main_area])
@@ -861,7 +862,6 @@ impl App {
             style
         })
         ].into()
-
     }
 
     fn stop_player(&mut self) {
