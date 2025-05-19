@@ -4,11 +4,11 @@ use toml_edit::DocumentMut;
 
 const DEFAULT_LIB_PATH: &str = "./";
 
-const DEFAULT_DP_ENABLED: bool = true;
+const DEFAULT_DP_ENABLED: bool = false;
 pub const DEFAULT_DP_CLIENTID: &str = "1354688246654697712";
 
 
-const DEFAULT_WS_ENABLED: bool = true;
+const DEFAULT_WS_ENABLED: bool = false;
 pub const DEFAULT_WS_PORT: u16 = 31466;
 
 

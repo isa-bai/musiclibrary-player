@@ -1,23 +1,74 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::{collections::VecDeque, io::BufReader, time::Duration};
-use iced::futures::channel::mpsc::{self, Sender};
+use std::time::{
+    SystemTime,
+    UNIX_EPOCH
+};
+use std::{
+    collections::VecDeque,
+    io::BufReader,
+    time::Duration
+};
+use iced::futures::channel::mpsc::{
+    self,
+    Sender
+};
 use iced::futures::SinkExt;
 use iced::mouse::Interaction;
-use iced::time::{self, milliseconds};
+use iced::time::{
+    self,
+    milliseconds
+};
 
 use ahash::AHashMap;
 use iced::widget::text::LineHeight;
-use iced::widget::{lazy, mouse_area, svg, vertical_space, Column};
-use iced::window::show_system_menu;
-use iced::{
-    gradient, widget::{button, column, container, horizontal_space, image, row, scrollable, slider, slider::HandleShape, text, Button}, window::Settings, Alignment, Border, Center, Element, Length::{self, Fill}, Size, Theme};
 
-use rodio::decoder::DecoderBuilder;
-use rodio::{source::EmptyCallback, OutputStream, Sink};
+use iced::{
+    window::show_system_menu,
+    gradient,
+    widget::{
+        button,
+        column,
+        container,
+        horizontal_space,
+        image, row, scrollable,
+        slider,
+        slider::HandleShape,
+        text,
+        Button,
+        lazy,
+        mouse_area,
+        svg,
+        vertical_space,
+        Column
+    },
+    window::Settings,
+    Alignment, Border,
+    Center,
+    Element,
+    Length::{
+        self,
+        Fill
+    },
+    Size,
+    Theme
+};
+
+use rodio::{
+    decoder::DecoderBuilder,
+    source::EmptyCallback,
+    OutputStream,
+    Sink
+};
 use iced::futures::StreamExt;
 
 use iced::futures::Stream;
-use iced::{mouse, stream, window, Padding, Subscription, Task};
+use iced::{
+    mouse,
+    stream,
+    window,
+    Padding,
+    Subscription,
+    Task
+};
 
 use crate::config::PROGRAM_CFG;
 use crate::discord::presence::{get_cover_art, DiscordClient, DiscordMessage, PresenceData};
@@ -427,13 +478,13 @@ impl App {
                         return window::get_maximized(self.window_id.unwrap())
                         .map(|r| Message::Window(WindowMsg::MaximiseWindow(!r)));
                     },
-                    WindowMsg::MaximiseWindow(b) =>{
+                    WindowMsg::MaximiseWindow(b) => {
                         self.title_clicked = false;
                         if b {self.maximise_icon = Icon::Unmaximise;}
                         else {self.maximise_icon = Icon::Maximise;}
                         return window::maximize(self.window_id.unwrap(), b);
                     }
-                    WindowMsg::MinimiseWindow =>{
+                    WindowMsg::MinimiseWindow => {
                         self.title_clicked = false;
                         return window::minimize(self.window_id.unwrap(), true);
                     }
