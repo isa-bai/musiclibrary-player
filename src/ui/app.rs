@@ -81,10 +81,7 @@ use super::icons::Icon;
 use super::content_views::{collection_page, queue_page, settings_page, CollectionView};
 
 
-
 const SIDEBAR_SIZE: f32 = 80.;
-
-
 
 
 fn sidebar_button_style(theme: &Theme, status: button::Status) -> button::Style {
@@ -254,13 +251,9 @@ fn song_scroll_style(theme: &Theme, status: scrollable::Status) -> scrollable::S
     let palette = theme.extended_palette();
     let mut style = scrollable::default(theme, status);
     style.vertical_rail.background = Some(palette.background.weakest.color.into());
-    //style.horizontal_rail.scroller
-    //style.vertical_rail.scroller.border.radius = 0.into();
-    //style.vertical_rail.border.radius = 0.into();
 
     style
 }
-
 
 pub enum ButtonType {
     _Text(String),
@@ -1374,8 +1367,6 @@ fn titlebar_svg_style(theme: &Theme, _status: svg::Status) -> svg::Style {
     style
 }
 
-
-
 fn format_duration(dur: Duration) -> String {
     let total_seconds = dur.as_secs();
     let minutes = (total_seconds % 3600) / 60;
@@ -1384,9 +1375,7 @@ fn format_duration(dur: Duration) -> String {
     format!("{:02}:{:02}", minutes, seconds)
 }
 
-
-pub fn run() -> iced::Result {
-
+pub fn run() {
     let mut window_settings = Settings::default();
     window_settings.size = Size::new(640., 410.);
     window_settings.decorations = false;
@@ -1397,5 +1386,5 @@ pub fn run() -> iced::Result {
     .theme(App::theme)
     .window(window_settings)
     .subscription(App::subscription)
-    .run()
+    .run();
 }
