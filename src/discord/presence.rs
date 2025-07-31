@@ -3,7 +3,7 @@ use discord_rich_presence::{activity::{Activity, ActivityType, Assets, Timestamp
 use reqwest::Client;
 use serde_json::Value;
 
-use crate::config::{DEFAULT_DP_CLIENTID, PROGRAM_CFG};
+use crate::config::{PROGRAM_CFG};
 
 #[derive(Debug)]
 pub enum DiscordMessage {
