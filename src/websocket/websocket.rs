@@ -42,7 +42,11 @@ pub async fn ws_main(reciever: Receiver<WebsocketMessage>) -> Result<(), Error> 
     let addr = format!("127.0.0.1:{}", port);
 
     let try_socket = TcpListener::bind(&addr).await;
-    let listener = try_socket.expect("bind failed");
+    if try_socket.is_err() {
+        return Ok(());
+    }
+    let try_socket = try_socket.unwrap();
+    let listener = try_socket;
 
     let (tx, _) = tokio::sync::broadcast::channel::<SongData>(10);
     tokio::spawn(song_listener(song_data.clone(), reciever, tx.clone()));
@@ -97,8 +101,9 @@ async fn song_listener(song_data: Arc<Mutex<SongData>>, mut receiver: Receiver<W
 async fn accept_connection(stream: TcpStream, mut rx: BroadcastReceiver<SongData>, song_mutex: Arc<Mutex<SongData>>) {
 
     let ws_stream = tokio_tungstenite::accept_async(stream)
-        .await
-        .expect("handshake err");
+        .await;
+    if ws_stream.is_err() {return;}
+    let ws_stream = ws_stream.unwrap();
 
     let (mut write, _) = ws_stream.split();
     let d;

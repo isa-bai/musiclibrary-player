@@ -1051,11 +1051,17 @@ impl App {
                 .try_send(WebsocketMessage::Clear);
 
             } else {
-                let (_, handle) = self.imghandles.get_key_value(&AlbumKey {
-                    title: self.player.current_song.as_ref().unwrap().album_title.clone(),
-                    artist: self.player.current_song.as_ref().unwrap().artists[0].clone()
-                }).unwrap();
+                let kvp = self.imghandles.get_key_value(&AlbumKey {
+                    title: self.player.current_song.as_ref().unwrap_or(&Song::default()).album_title.clone(),
+                    artist: self.player.current_song.as_ref().unwrap_or(&Song::default()).artists[0].clone()
+                });
 
+                if kvp.is_none() {
+                    return;
+                }
+
+                let handle = kvp.unwrap().1;
+                
 
                 let mut img: Option<ImageBuffer<Rgba<u8>, Vec<u8>>> = None;
                 match handle {
@@ -1073,9 +1079,9 @@ impl App {
                             let b64img = format!("{}{}", "data:image/png;base64,", BASE64_STANDARD.encode(buffer.into_inner()));
                             _ = self.websocket_sender.as_ref().unwrap().clone()
                                 .try_send(WebsocketMessage::UpdateSongData(SongData {
-                                    title: self.player.current_song.as_ref().unwrap().title.clone(),
-                                    artist: self.player.current_song.as_ref().unwrap().artists.join(" / "),
-                                    album: self.player.current_song.as_ref().unwrap().album_title.clone(),
+                                    title: self.player.current_song.as_ref().unwrap_or(&Song::default()).title.clone(),
+                                    artist: self.player.current_song.as_ref().unwrap_or(&Song::default()).artists.join(" / "),
+                                    album: self.player.current_song.as_ref().unwrap_or(&Song::default()).album_title.clone(),
                                     b64img: b64img,
                                     clear: None
                                 }));
