@@ -1382,7 +1382,7 @@ pub fn run() {
     window_settings.transparent = true;
     window_settings.min_size = Some(Size::new(640., 410.));
     window_settings.icon = Some(window::icon::from_file_data(include_bytes!("../../assets/icon.png"), None).unwrap());
-    iced::application(App::title, App::update, App::view)
+    _ = iced::application(App::title, App::update, App::view)
     .theme(App::theme)
     .window(window_settings)
     .subscription(App::subscription)
