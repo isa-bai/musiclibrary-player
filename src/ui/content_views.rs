@@ -1,10 +1,11 @@
 use iced::{gradient, padding, widget::{button, column, container, horizontal_space, image, lazy, pick_list, row, scrollable, svg, text, text::{LineHeight, Wrapping}, tooltip, Button, Column, Space}, Alignment, Element, Length::{self, Fill, FillPortion, Shrink}, Theme};
-use super::{app::{App, Message, IMG_SIZE}, icons::Icon};
+use super::{app::{App, Message}, icons::Icon};
 
 
 const ARTWORK_BORDER: u32 = 4;
 
 pub fn album_page(app: &App) -> Element<'_, Message> {
+    let image_display_size = 120;
     lazy(app.version, move |_version| {
         let mut grid = Column::new().padding(padding::top(20));
 
@@ -25,21 +26,21 @@ pub fn album_page(app: &App) -> Element<'_, Message> {
                 //album entry_____________________________
                 button(tooltip(
                     container(
-                        image(h).width(IMG_SIZE).height(IMG_SIZE)
+                        image(h).width(image_display_size).height(image_display_size)
                         )
                         .clip(true)
                         .style(artwork_container_style)
-                        .width(IMG_SIZE)
-                        .height(IMG_SIZE)
-                        .center_x(IMG_SIZE+(2*ARTWORK_BORDER))
-                        .center_y(IMG_SIZE+(2*ARTWORK_BORDER)),
+                        .width(image_display_size)
+                        .height(image_display_size)
+                        .center_x(image_display_size+(2*ARTWORK_BORDER))
+                        .center_y(image_display_size+(2*ARTWORK_BORDER)),
                 text(
                     format!("{}\n{}", key.artist, key.title)
                 ).wrapping(text::Wrapping::None),
                 tooltip::Position::Top
                 ).style(tooltip_style).padding(8))
-                .height(IMG_SIZE+(2*ARTWORK_BORDER))
-                .width(IMG_SIZE+(2*ARTWORK_BORDER))
+                .height(image_display_size+(2*ARTWORK_BORDER))
+                .width(image_display_size+(2*ARTWORK_BORDER))
                 .on_press(Message::AddAlbumToQueue(key.to_owned()))
                 .padding(0)
                 .into()

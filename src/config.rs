@@ -3,6 +3,7 @@ use std::{env, fs::{self, File}, io::Write, path::PathBuf, sync::LazyLock};
 use toml_edit::DocumentMut;
 
 const DEFAULT_LIB_PATH: &str = "./";
+const DEFAULT_IMG_SIZE: u32 = 120;
 
 const DEFAULT_DP_ENABLED: bool = false;
 pub const DEFAULT_DP_CLIENTID: &str = "1354688246654697712";
@@ -15,6 +16,7 @@ pub const DEFAULT_WS_PORT: u16 = 31466;
 const DEFAULT_CFG: LazyLock<String> = LazyLock::new(|| {
     format!(r#"[library]
 path="{DEFAULT_LIB_PATH}"
+imgsize="{DEFAULT_IMG_SIZE}"
 
 [websocket]
 enabled={DEFAULT_WS_ENABLED}
@@ -49,12 +51,14 @@ impl Default for DiscordOptions {
 #[derive(Debug)]
 struct LibraryOptions {
     path: String,
+    imgsize: u32
 }
 
 impl Default for LibraryOptions {
     fn default() -> Self {
         Self {
-            path: String::from(DEFAULT_LIB_PATH)
+            path: String::from(DEFAULT_LIB_PATH),
+            imgsize: 120
         }
     }
 }
@@ -127,6 +131,19 @@ impl ProgramConfig {
                             if let Some(path) = v.as_str() {config.library_opts.path = String::from(path)};
                         }
                     },
+                    "imgsize" => {
+                        if v.is_integer() {
+                            let mut v = v.as_integer().unwrap();
+                            if v < 20 {
+                                v = 20;
+                            } else {
+                                if v > 300 {
+                                    v = 300;
+                                }
+                            }
+                            config.library_opts.imgsize = v as u32;
+                        }
+                    },
                     _ => {}
                 }
             }
@@ -181,6 +198,10 @@ impl ProgramConfig {
 
     pub fn library_path(&self) -> &str {
         &self.library_opts.path
+    }
+
+    pub fn img_size(&self) -> u32 {
+        self.library_opts.imgsize
     }
 
     pub fn discord_rp_enabled(&self) -> bool {

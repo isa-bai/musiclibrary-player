@@ -84,8 +84,7 @@ use super::content_views::{collection_page, queue_page, settings_page, Collectio
 
 const SIDEBAR_SIZE: f32 = 80.;
 
-//height and width of album artwork stored in memory
-pub const IMG_SIZE: u32 = 120;
+
 
 
 fn sidebar_button_style(theme: &Theme, status: button::Status) -> button::Style {
@@ -397,27 +396,41 @@ pub struct App {
     pub collection_view: CollectionView,
     window_id: Option<window::Id>,
     title_clicked: bool,
-    maximise_icon: Icon
+    maximise_icon: Icon,
 }
 
 
 impl App {
     fn new() -> Self {
 
-        let mut lib = music_library::scan_library(PROGRAM_CFG.library_path(), IMG_SIZE);
+    let img_size = PROGRAM_CFG.img_size();
+
+        let mut lib = music_library::scan_library(PROGRAM_CFG.library_path(), img_size);
         let stream_handle = rodio::OutputStreamBuilder::open_default_stream().unwrap();
         let sink = rodio::Sink::connect_new(stream_handle.mixer());
         sink.pause();
+
+        let size = (img_size*img_size) as usize;
+        let mut blank_img: Vec<u8> = Vec::with_capacity(size);
+        //blank image bytes rgba(0,0,0,255)
+        for _ in 0..size {
+            blank_img.push(0);
+            blank_img.push(0);
+            blank_img.push(0);
+            blank_img.push(255);
+        }
+
         //pull all the album art out of the lib structure, clone, then delete
         let mut ih = AHashMap::new();
         for (key, info) in lib.get_all_albums().iter_mut() {
             let h = image::Handle::from_rgba(
-                IMG_SIZE, 
-                IMG_SIZE,
+                img_size, 
+                img_size,
                 match &info.artwork {
-                    Some(art) =>art.clone(),
-                    //blank image bytes rgba(0,0,0,255)
-                    None => [[0, 0, 0, 255]; (IMG_SIZE*IMG_SIZE) as usize].as_flattened().to_vec().into_boxed_slice()
+                    Some(art) => art.clone(),
+                    None => {
+                        blank_img.clone().into_boxed_slice()
+                    }
                 }
             );
             ih.entry(key.clone()).or_insert(h);
