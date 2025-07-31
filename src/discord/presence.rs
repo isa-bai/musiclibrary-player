@@ -1,6 +1,5 @@
 use std::time::Duration;
-
-use discord_rich_presence::{activity::{Activity, ActivityType, Assets, Timestamps}, DiscordIpc, DiscordIpcClient};
+use discord_rich_presence::{activity::{Activity, ActivityType, Assets, Timestamps, DisplayType}, DiscordIpc, DiscordIpcClient};
 use reqwest::Client;
 use serde_json::Value;
 
@@ -31,20 +30,20 @@ pub struct DiscordClient {
 
 impl DiscordClient {
     pub fn new() -> Self {
-        let client = match DiscordIpcClient::new(PROGRAM_CFG.discord_client_id()) {
-            Ok(c) => c,
-            Err(_) => DiscordIpcClient::new(DEFAULT_DP_CLIENTID).unwrap()
-        };
+        // let client = match DiscordIpcClient::new(PROGRAM_CFG.discord_client_id()) {
+        //     Ok(c) => c,
+        //     Err(_) => DiscordIpcClient::new(DEFAULT_DP_CLIENTID).unwrap()
+        // };
         Self {
-            client
+            client: DiscordIpcClient::new(PROGRAM_CFG.discord_client_id())
         }
     }
 
-    pub fn _connect(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn _connect(&mut self) -> Result<(), discord_rich_presence::error::Error> {
         self.client.connect()
     }
 
-    pub fn set_presence(&mut self, data: &PresenceData, img: &str, mut start: u64) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn set_presence(&mut self, data: &PresenceData, img: &str, mut start: u64) -> Result<(), discord_rich_presence::error::Error> {
         start = start - data.current_pos;
         self.client.set_activity(Activity::new()
             .state(&data.artist) //artist
@@ -53,6 +52,7 @@ impl DiscordClient {
                 .start(start as i64)
                 .end((start + data.song_duration) as i64))
             .activity_type(ActivityType::Listening)
+            .status_display_type(DisplayType::State)
             .assets(Assets::new()
                 .large_text(&data.album_title)
                 .large_image(img))
@@ -64,7 +64,7 @@ impl DiscordClient {
         _ = self.client.close();
     } 
 
-    pub fn clear_presence(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn clear_presence(&mut self) -> Result<(), discord_rich_presence::error::Error> {
         self.client.clear_activity()
     }
     
