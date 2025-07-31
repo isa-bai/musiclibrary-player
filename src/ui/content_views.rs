@@ -50,8 +50,6 @@ pub fn album_page(app: &App) -> Element<'_, Message> {
         //offset scrollbar
         this_row.push(container("").width(10).into());
         grid = grid.push(row(this_row).padding(padding::bottom(20)));
-        //println!("some image");
-
 
         container(scrollable(grid.spacing(20))
         .width(Fill)

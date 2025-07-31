@@ -1,3 +1,5 @@
+use base64::prelude::*;
+use std::io::Cursor;
 use std::time::{
     SystemTime,
     UNIX_EPOCH
@@ -52,6 +54,7 @@ use iced::{
     Theme
 };
 
+use ::image::{ImageBuffer, Rgba, RgbaImage};
 use rodio::{
     decoder::DecoderBuilder,
     source::EmptyCallback,
@@ -73,6 +76,7 @@ use iced::{
 use crate::config::PROGRAM_CFG;
 use crate::discord::presence::{get_cover_art, DiscordClient, DiscordMessage, PresenceData};
 use crate::musiclib::music_library::{self, AlbumKey, MusicLibrary, Song};
+use crate::websocket::websocket::{self, SongData, WebsocketMessage};
 use super::icons::Icon;
 use super::content_views::{collection_page, queue_page, settings_page, CollectionView};
 
@@ -299,6 +303,7 @@ pub enum Message {
     Window(WindowMsg),
     SongChangeWorker(Sender<Message>),
     DiscordWorker(Sender<DiscordMessage>),
+    WebsocketWorker(Sender<WebsocketMessage>),
     ThemeChanged(Theme),
     ContentChanged(ContentView),
     CollectionViewChange(CollectionView),
@@ -387,6 +392,7 @@ pub struct App {
     pub durtick: u32,
     pub song_update_sender: Option<Sender<Message>>,
     pub discord_sender: Option<Sender<DiscordMessage>>,
+    pub websocket_sender: Option<Sender<WebsocketMessage>>,
     song_text_id: scrollable::Id,
     pub collection_view: CollectionView,
     window_id: Option<window::Id>,
@@ -445,6 +451,7 @@ impl App {
             durtick: 0,
             song_update_sender: None,
             discord_sender: None,
+            websocket_sender: None,
             song_text_id: scrollable::Id::unique(),
             window_id: None,
             //window_state: WindowState::None,
@@ -516,6 +523,9 @@ impl App {
             Message::DiscordWorker(sender) => {
                 self.discord_sender = Some(sender);
             },
+            Message::WebsocketWorker(sender) => {
+                self.websocket_sender = Some(sender);
+            },
             Message::ThemeChanged(theme) => {
                 self.theme = theme;
             },
@@ -539,6 +549,7 @@ impl App {
                             self.player.sink.pause();
                         }
                         self.update_discord_presence();
+                        self.update_websocket();
 
                     },
                     ControlMsg::Stop => {
@@ -580,6 +591,7 @@ impl App {
                             //append previous song.
                             self.add_song_to_sink(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
                             self.player.current_song = Some(self.player.song_queue.get(self.player.queue_pos).unwrap().clone());
+                            self.update_websocket();
                         }
                         self.update_discord_presence();
                     },
@@ -646,9 +658,9 @@ impl App {
                 }
             },
             Message::SongFinished => {
-                //println!("song finished");
                 self.get_next_song();
                 self.update_discord_presence();
+                self.update_websocket();
 
             }
             Message::AddAlbumToQueue(key) => {
@@ -920,6 +932,7 @@ impl App {
         self.player.sink.pause();
         self.player.current_song = None;
         self.update_discord_presence();
+        self.update_websocket();
         //if clear_queue {self.player.song_queue.clear();}
         self.player.next_appended = false;
         if self.player.state == PlayerState::Active {self.player.state = PlayerState::Idle};
@@ -1029,6 +1042,55 @@ impl App {
         }
     }
 
+    fn update_websocket(&mut self) {
+        if self.websocket_sender.is_some() {
+
+            if self.player.current_song.is_none() || self.player.sink.is_paused() {
+
+                _ = self.websocket_sender.as_ref().unwrap().clone()
+                .try_send(WebsocketMessage::Clear);
+
+            } else {
+                let (_, handle) = self.imghandles.get_key_value(&AlbumKey {
+                    title: self.player.current_song.as_ref().unwrap().album_title.clone(),
+                    artist: self.player.current_song.as_ref().unwrap().artists[0].clone()
+                }).unwrap();
+
+
+                let mut img: Option<ImageBuffer<Rgba<u8>, Vec<u8>>> = None;
+                match handle {
+                    image::Handle::Rgba { id: _, width, height, pixels } => {
+                        img = RgbaImage::from_vec(*width, *height, pixels.to_vec());
+                    },
+                    _ => {}
+                }
+
+                if img.is_some() {
+                    let img = img.unwrap();
+                    let mut buffer = Cursor::new(Vec::new());
+                    match img.write_to(&mut buffer, ::image::ImageFormat::Png) {
+                        Ok(_) => {
+                            let b64img = format!("{}{}", "data:image/png;base64,", BASE64_STANDARD.encode(buffer.into_inner()));
+                            _ = self.websocket_sender.as_ref().unwrap().clone()
+                                .try_send(WebsocketMessage::UpdateSongData(SongData {
+                                    title: self.player.current_song.as_ref().unwrap().title.clone(),
+                                    artist: self.player.current_song.as_ref().unwrap().artists.join(" / "),
+                                    album: self.player.current_song.as_ref().unwrap().album_title.clone(),
+                                    b64img: b64img,
+                                    clear: None
+                                }));
+                        },
+                        Err(_) => {
+                            
+                        },
+                    }
+
+                }
+
+            }
+        }
+    }
+
     fn subscription(&self) -> Subscription<Message> {
         let duration_update = match self.player.state {
             PlayerState::Idle => Subscription::none(),
@@ -1065,7 +1127,6 @@ impl App {
                     // discard all but the final message
                     while let Ok(msg) = receiver.try_next() {
                         final_msg = Some(msg.unwrap());
-                        //println!("iterating loop msg");
                     }
 
 
@@ -1103,7 +1164,6 @@ impl App {
                             }
                         }
                     }
-                    //println!("loop end");
                 }
 
             })
@@ -1123,12 +1183,30 @@ impl App {
             })
         }
 
+        fn ws_update() -> impl Stream<Item = Message> {
+            stream::channel(100, async |mut output| {
+                // Create channel
+                let (sender, receiver) = mpsc::channel::<WebsocketMessage>(100);
+                // Send the sender back to the application
+                _ = output.send(Message::WebsocketWorker(sender)).await;
+                
+                _ = websocket::ws_main(receiver).await;
+
+            })
+        }
+
+
+
         let worker_subscription = Subscription::run(playback_updater);
         let discord_subscription = Subscription::run(discord_update);
-
+        let ws_subscription = Subscription::run(ws_update);
+        
         let mut subs = vec![duration_update, worker_subscription];
         if PROGRAM_CFG.discord_rp_enabled() {
             subs.push(discord_subscription);
+        }
+        if PROGRAM_CFG.ws_enabled() {
+            subs.push(ws_subscription);
         }
 
         Subscription::batch(subs)

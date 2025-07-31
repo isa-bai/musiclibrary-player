@@ -70,7 +70,6 @@ impl DiscordClient {
     
     pub fn block_until_connected(&mut self) {
         while let Err(_) = self.client.connect() {
-            println!("failed to connect");
             std::thread::sleep(Duration::from_secs(5));
         }
     }

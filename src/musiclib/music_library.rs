@@ -127,7 +127,7 @@ impl MusicLibrary {
         }
     }
 
-    pub fn total_songs(&self) -> usize {
+    pub fn _total_songs(&self) -> usize {
         self.artists
             .values()
             .flat_map(|artist| artist.albums.values())
@@ -136,13 +136,13 @@ impl MusicLibrary {
             .sum()
     }
 
-    pub fn total_artists(&self) -> usize {
+    pub fn _total_artists(&self) -> usize {
         self.artists
             .values()
             .count()
     }
 
-    pub fn total_albums(&self) -> usize {
+    pub fn _total_albums(&self) -> usize {
         self.artists
             .values()
             .flat_map(|artist| artist.albums.values())
@@ -160,7 +160,7 @@ impl MusicLibrary {
             .collect()
     }
 
-    pub fn delete_art(&mut self, album_key: &AlbumKey) {
+    pub fn _delete_art(&mut self, album_key: &AlbumKey) {
         let artist = self.artists.get_mut(&ArtistKey { name: album_key.artist.clone()}).unwrap();
         artist.albums.get_mut(album_key).unwrap().artwork = None;
     }
@@ -182,7 +182,7 @@ impl MusicLibrary {
         None
     }
 
-    pub fn album_has_art(&self, album_key: &AlbumKey) -> bool {
+    pub fn _album_has_art(&self, album_key: &AlbumKey) -> bool {
         if let Some(x) = self.artists.get(&ArtistKey { name: album_key.artist.clone()}) {
             if let Some(y) = x.albums.get(album_key) {
                 return y.artwork.is_some();
@@ -191,7 +191,7 @@ impl MusicLibrary {
         return false;
     }
 
-    pub fn get_artist_albums(&self, artist_key: &ArtistKey) -> Vec<(&AlbumKey, &AlbumInfo)> {
+    pub fn _get_artist_albums(&self, artist_key: &ArtistKey) -> Vec<(&AlbumKey, &AlbumInfo)> {
         self.artists.get_key_value(artist_key).unwrap().1.albums.iter().collect()
     }
 
@@ -206,7 +206,7 @@ impl MusicLibrary {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub fn _is_empty(&self) -> bool {
         self.artists.len() == 0
     }
 
@@ -324,7 +324,6 @@ async fn probe_file(
             guard.insert(album_key.clone());
             drop(guard);
             if let Some(art) = m.visuals().first() {
-                //println!("IMAGE !!");
                 let img = image::load_from_memory(&art.data);
                 if img.is_ok() {
                     let rs = img.unwrap().resize(img_size, img_size, FilterType::Triangle);
@@ -362,14 +361,14 @@ async fn probe_file(
             album_key.title = "Unknown".to_string();
          }
         current_song.album_title = album_key.title.clone();
-        //println!("{:?}", album_art.clone().unwrap().iter());
+
         if current_song.artists.len() == 0 {
             current_song.artists.push(album_key.artist.clone());
         }
         if current_song.disc_number == 0 {
             current_song.disc_number = 1;
         }
-        //after we get the metadata we need, use logic to populate library
+
         library.lock().unwrap().add_song(current_song, album_key, album_art);
     }
 }

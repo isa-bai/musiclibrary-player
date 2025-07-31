@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+      //CONFIG VALUES
+      const dynamic = false; //If box should expand horizontally to accomodate longer text
+      const port = 31466; //Websocket port
+      //END OF CONFIG
+
+      //CONFIGURATION
+      function configure() {
+        if(dynamic) {
+          document.getElementById("widget").classList.add("dynamic");
+        }
+        else document.getElementById("widget").classList.add("static");
+      }
+      //END OF CONFIGURATION
+
+      function connect() {
+        const socket = new WebSocket(`ws://localhost:${port}`);
+
+        socket.onclose = (event) => {
+          console.log("websocket connection failed");
+          setTimeout(connect, 5000);
+          document.getElementById("cont").classList.replace("show", "hide");
+        };
+
+        socket.onmessage = (event) => {
+          try {
+
+            const songData = JSON.parse(event.data);
+            console.log('received:', songData);
+
+            if ('clear' in songData) {
+              document.getElementById("cont").classList.replace("show", "hide");
+              return;
+            }
+
+            document.getElementById("cont").classList.replace("hide", "show");
+            document.getElementById("title").innerHTML = songData.title;
+            document.getElementById("artist").innerHTML = songData.artist;
+            document.getElementById("album").innerHTML = songData.album;
+            document.getElementById("cont").style.backgroundImage = `url("${songData.b64img}")`;
+            document.getElementById("cover").src = songData.b64img;
+
+          } catch (error) {
+
+          }
+        };
+
+      }
+
+    document.onreadystatechange = function () {
+      if (document.readyState == "complete") {
+        configure();
+        connect();
+      }
+    }
+    </script> 
+
+    <style>
+        html, body {
+          font-size: 16px;
+          color: white;
+          margin: 0;
+          padding: 0;
+        }
+    
+        h2, h3, h4 {
+          font-family: "Helvetica", sans-serif;
+          padding: 0;
+          margin: 0;
+          text-transform: capitalize;
+          transition: opacity 800ms;
+        }
+
+        #cont {
+          display: inline-block;
+          background-size: cover;
+          background-position: center;
+          transition: background-image 800ms ease, opacity 800ms;
+        }
+
+        #widget.static h2, h3, h4 {
+          width: 200px;
+          white-space: nowrap !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+        }
+
+        #widget.static {
+          width: 300 !important;
+        }
+
+        #widget.dynamic {
+          min-width: 300 !important;
+          width: fit-content !important;
+        }
+    
+        #widget {
+          background: rgba(0, 0, 0, 0.70);
+          backdrop-filter: blur(3px);
+          -webkit-backdrop-filter: blur(3px);
+          position: relative;
+          left: 0px;
+          transition: .2s all ease;
+          overflow: hidden;
+          padding: .5rem;
+          display: flex; 
+          align-items: center;
+          height: 80px;
+        }
+
+        #art {
+          width: 80px;
+          height: 80px;
+          margin-right: 1rem;
+        }
+    
+        #cover {
+          width: inherit;
+          height: inherit;
+          margin: inherit;
+          position: absolute;
+          transition: opacity 800ms;
+          z-index: 2;
+        }
+
+        #loader.show {
+          position: absolute;
+          z-index: 1;
+          width: 30px;
+          aspect-ratio: 1;
+          border-radius: 50%;
+          border: 6px solid;
+          border-color: #ffffff #0000;
+          margin: 19px;
+          animation: spin 1500ms ease infinite;
+        }
+        @keyframes spin {
+          to{transform: rotate(.5turn)}
+        }
+    
+        #info {
+          flex-grow: 1;
+        }
+
+        .show {
+          opacity: 1;
+        }
+
+        .hide {
+          opacity: 0;
+        }
+    
+        h2 {
+          font-size: .9rem;
+          height: 40px;
+        }
+        h3 {
+          font-size: .8rem;
+        }
+    
+        h4 {
+          font-size: .75rem;
+        }
+    </style>
+  </head>
+  <body>
+    <div id="cont" class="hide">
+      <div id="widget">
+        <div id="art">
+          <img id="cover" alt="Album Cover">
+          <div id="loader" class="hide"></div>
+        </div>
+        <div id="info">
+          <h2 id="title"></h2>
+          <h3 id="artist"></h3>
+          <h4 id="album"></h4>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
