@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 ahash = "0.8.11"
 base64 = "0.22.1"
+discord-rich-presence = "1.0.0"
 futures-util = "0.3.31"
 image = "0.25.5"
 jwalk = "0.8.1"
@@ -33,9 +34,6 @@ git = "https://github.com/RustAudio/rodio.git"
 rev = "64cf70b45b3097ca10ca72eccceaddbb937b24e2"
 default-features = false
 features = ["playback", "symphonia", "symphonia-all"]
-
-[dependencies.discord-rich-presence]
-git = "https://github.com/isa-bai/discord-rich-presence"
 
 
 [profile.dev]

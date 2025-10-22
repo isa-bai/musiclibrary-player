@@ -1,5 +1,5 @@
 use std::time::Duration;
-use discord_rich_presence::{activity::{Activity, ActivityType, Assets, Timestamps, DisplayType}, DiscordIpc, DiscordIpcClient};
+use discord_rich_presence::{activity::{Activity, ActivityType, Assets, Timestamps, StatusDisplayType}, DiscordIpc, DiscordIpcClient};
 use reqwest::Client;
 use serde_json::Value;
 
@@ -52,7 +52,7 @@ impl DiscordClient {
                 .start(start as i64)
                 .end((start + data.song_duration) as i64))
             .activity_type(ActivityType::Listening)
-            .status_display_type(DisplayType::State)
+            .status_display_type(StatusDisplayType::State)
             .assets(Assets::new()
                 .large_text(&data.album_title)
                 .large_image(img))
