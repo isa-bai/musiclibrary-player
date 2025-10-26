@@ -220,30 +220,30 @@ pub fn settings_page(app: &App) -> Element<'_, Message> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum CollectionView {
+pub enum LibraryView {
     Songs,
     Albums,
     Artists
 }
 
-pub fn collection_page(app: &App) -> Element<'_, Message> {
+pub fn library_page(app: &App) -> Element<'_, Message> {
     let header = container(
         row![
             horizontal_space(),
-            header_button(Icon::Note, "Songs".into(), CollectionView::Songs, &app.collection_view),
+            header_button(Icon::Note, "Songs".into(), LibraryView::Songs, &app.library_view),
             horizontal_space(),
-            header_button(Icon::Album, "Albums".into(), CollectionView::Albums, &app.collection_view),
+            header_button(Icon::Album, "Albums".into(), LibraryView::Albums, &app.library_view),
             horizontal_space(),
-            header_button(Icon::Artist, "Artists".into(), CollectionView::Artists, &app.collection_view),
+            header_button(Icon::Artist, "Artists".into(), LibraryView::Artists, &app.library_view),
             horizontal_space(),
             container("").width(10)
         ]
     ).width(Fill).height(44).style(header_style).padding(4);
 
-    let content = match app.collection_view {
-        CollectionView::Songs => songs_page(app),
-        CollectionView::Albums => album_page(app),
-        CollectionView::Artists => artist_page(app),
+    let content = match app.library_view {
+        LibraryView::Songs => songs_page(app),
+        LibraryView::Albums => album_page(app),
+        LibraryView::Artists => artist_page(app),
         //_ => container("").into()
     };
 
@@ -371,7 +371,7 @@ fn scrollable_style(theme: &Theme, status: scrollable::Status) -> scrollable::St
     style
 }
 
-fn header_button(icon: Icon, txt: String, msg: CollectionView, app_view: &CollectionView) -> Button<'_, Message> {
+fn header_button(icon: Icon, txt: String, msg: LibraryView, app_view: &LibraryView) -> Button<'_, Message> {
 
     button(container(row![
         svg(svg::Handle::from(icon.icon_data()))
@@ -394,7 +394,7 @@ fn header_button(icon: Icon, txt: String, msg: CollectionView, app_view: &Collec
     .into()
 }
 
-fn header_button_style(theme: &Theme, status: button::Status, view: CollectionView, app_view: CollectionView) -> button::Style {
+fn header_button_style(theme: &Theme, status: button::Status, view: LibraryView, app_view: LibraryView) -> button::Style {
     let palette = theme.extended_palette();
     let mut style = button::Style::default();
     

@@ -78,7 +78,7 @@ use crate::discord::presence::{get_cover_art, DiscordClient, DiscordMessage, Pre
 use crate::musiclib::music_library::{self, AlbumKey, MusicLibrary, Song};
 use crate::websocket::websocket::{self, SongData, WebsocketMessage};
 use super::icons::Icon;
-use super::content_views::{collection_page, queue_page, settings_page, CollectionView};
+use super::content_views::{library_page, queue_page, settings_page, LibraryView};
 
 
 const SIDEBAR_SIZE: f32 = 80.;
@@ -298,7 +298,7 @@ pub enum Message {
     WebsocketWorker(Sender<WebsocketMessage>),
     ThemeChanged(Theme),
     ContentChanged(ContentView),
-    CollectionViewChange(CollectionView),
+    CollectionViewChange(LibraryView),
     ControlChange(ControlMsg),
     AddAlbumToQueue(AlbumKey),
     SongFinished,
@@ -386,7 +386,7 @@ pub struct App {
     pub discord_sender: Option<Sender<DiscordMessage>>,
     pub websocket_sender: Option<Sender<WebsocketMessage>>,
     song_text_id: scrollable::Id,
-    pub collection_view: CollectionView,
+    pub library_view: LibraryView,
     window_id: Option<window::Id>,
     title_clicked: bool,
     maximise_icon: Icon,
@@ -432,8 +432,8 @@ impl App {
         sink.set_volume(0.5);
 
         Self {
-            current_view: ContentView::Queue,
-            collection_view: CollectionView::Albums,
+            current_view: ContentView::Library,
+            library_view: LibraryView::Albums,
             theme: Theme::CatppuccinMocha,
             library: lib,
             player: Player {
@@ -682,7 +682,7 @@ impl App {
                 }
             }
             Message::CollectionViewChange(view) => {
-                self.collection_view = view;
+                self.library_view = view;
             }
             //_ => {}
         }
@@ -693,7 +693,7 @@ impl App {
         let sidebar = 
         container(column![
             sidebar_button(Some(Icon::Play) ,"Queue", ContentView::Queue),
-            sidebar_button(Some(Icon::Note), "Library", ContentView::Collection),
+            sidebar_button(Some(Icon::Note), "Library", ContentView::Library),
             //---separator element
             container(vertical_space())
             .style(|t: &Theme| {
@@ -739,7 +739,7 @@ impl App {
                 content_padding = Padding { top: 1., right: 1., bottom: 0. , left: 1. };
                 queue_page(self)
             },
-            ContentView::Collection => collection_page(self),
+            ContentView::Library => library_page(self),
             ContentView::Settings => settings_page(self),
             //_ => {queue_page(self)}
         }).style(content_container_style).padding(content_padding);
@@ -1302,7 +1302,7 @@ impl Default for App {
 pub enum ContentView {
     Queue,
     Settings,
-    Collection
+    Library
 }
 
 fn titlebar_style(theme: &Theme) -> container::Style {
