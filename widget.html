@@ -9,7 +9,7 @@
 
       //CONFIGURATION
       function configure() {
-        if(dynamic) {
+        if (dynamic) {
           document.getElementById("widget").classList.add("dynamic");
         }
         else document.getElementById("widget").classList.add("static");
@@ -50,120 +50,129 @@
 
       }
 
-    document.onreadystatechange = function () {
-      if (document.readyState == "complete") {
-        configure();
-        connect();
+      document.onreadystatechange = function () {
+        if (document.readyState == "complete") {
+          configure();
+          connect();
+        }
       }
-    }
-    </script> 
+    </script>
 
     <style>
-        html, body {
-          font-size: 16px;
-          color: white;
-          margin: 0;
-          padding: 0;
-        }
-    
-        h2, h3, h4 {
-          font-family: "Helvetica", sans-serif;
-          padding: 0;
-          margin: 0;
-          text-transform: capitalize;
-          transition: opacity 800ms;
-        }
+      html,
+      body {
+        font-size: 16px;
+        color: white;
+        margin: 0;
+        padding: 0;
+      }
 
-        #cont {
-          display: inline-block;
-          background-size: cover;
-          background-position: center;
-          transition: background-image 800ms ease, opacity 800ms;
-        }
+      h2,
+      h3,
+      h4 {
+        font-family: "Helvetica", sans-serif;
+        padding: 0;
+        margin: 0;
+        text-transform: capitalize;
+        transition: opacity 800ms;
+      }
 
-        #widget.static h2, h3, h4 {
-          width: 200px;
-          white-space: nowrap !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-        }
+      #cont {
+        display: inline-block;
+        background-size: cover;
+        background-position: center;
+        transition: background-image 800ms ease, opacity 800ms;
+      }
 
-        #widget.static {
-          width: 300 !important;
-        }
+      #widget.static h2,
+      h3,
+      h4 {
+        width: 200px;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
 
-        #widget.dynamic {
-          min-width: 300 !important;
-          width: fit-content !important;
-        }
-    
-        #widget {
-          background: rgba(0, 0, 0, 0.70);
-          backdrop-filter: blur(3px);
-          -webkit-backdrop-filter: blur(3px);
-          position: relative;
-          left: 0px;
-          transition: .2s all ease;
-          overflow: hidden;
-          padding: .5rem;
-          display: flex; 
-          align-items: center;
-          height: 80px;
-        }
+      #widget.static {
+        width: 300 !important;
+      }
 
-        #art {
-          width: 80px;
-          height: 80px;
-          margin-right: 1rem;
-        }
-    
-        #cover {
-          width: inherit;
-          height: inherit;
-          margin: inherit;
-          position: absolute;
-          transition: opacity 800ms;
-          z-index: 2;
-        }
+      #widget.dynamic {
+        min-width: 300 !important;
+        width: fit-content !important;
+      }
 
-        #loader.show {
-          position: absolute;
-          z-index: 1;
-          width: 30px;
-          aspect-ratio: 1;
-          border-radius: 50%;
-          border: 6px solid;
-          border-color: #ffffff #0000;
-          margin: 19px;
-          animation: spin 1500ms ease infinite;
-        }
-        @keyframes spin {
-          to{transform: rotate(.5turn)}
-        }
-    
-        #info {
-          flex-grow: 1;
-        }
+      #widget {
+        background: rgba(0, 0, 0, 0.70);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        position: relative;
+        left: 0px;
+        transition: .2s all ease;
+        overflow: hidden;
+        padding: .5rem;
+        display: flex;
+        align-items: center;
+        height: 80px;
+      }
 
-        .show {
-          opacity: 1;
-        }
+      #art {
+        width: 80px;
+        height: 80px;
+        margin-right: 1rem;
+      }
 
-        .hide {
-          opacity: 0;
+      #cover {
+        width: inherit;
+        height: inherit;
+        margin: inherit;
+        position: absolute;
+        transition: opacity 800ms;
+        z-index: 2;
+      }
+
+      #loader.show {
+        position: absolute;
+        z-index: 1;
+        width: 30px;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        border: 6px solid;
+        border-color: #ffffff #0000;
+        margin: 19px;
+        animation: spin 1500ms ease infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(.5turn)
         }
-    
-        h2 {
-          font-size: .9rem;
-          height: 40px;
-        }
-        h3 {
-          font-size: .8rem;
-        }
-    
-        h4 {
-          font-size: .75rem;
-        }
+      }
+
+      #info {
+        flex-grow: 1;
+      }
+
+      .show {
+        opacity: 1;
+      }
+
+      .hide {
+        opacity: 0;
+      }
+
+      h2 {
+        font-size: .9rem;
+        height: 40px;
+      }
+
+      h3 {
+        font-size: .8rem;
+      }
+
+      h4 {
+        font-size: .75rem;
+      }
     </style>
   </head>
   <body>
