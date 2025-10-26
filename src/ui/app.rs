@@ -1005,19 +1005,18 @@ impl App {
         if let Ok(file) = std::fs::File::open(&song.file_path) {
             //let src  = rodio::Decoder::new(BufReader::new(file)).unwrap();
             let src = DecoderBuilder::new()
-            .with_seekable(true)
-            .with_data(file)
-            .with_hint("flac")
-            .with_gapless(true)
-            .build().unwrap();
+                .with_seekable(true)
+                .with_data(file)
+                .with_hint("flac")
+                .with_gapless(true)
+                .build().unwrap();
 
-        
-        self.player.sink.append(src);
-        let sender = self.song_update_sender.as_ref().unwrap().clone();
-        self.player.sink.append(EmptyCallback::new(Box::new(move || {
-            //send Message::SongFinished to the update loop
-            _ = sender.clone().try_send(Message::SongFinished);
-        })));
+            self.player.sink.append(src);
+            let sender = self.song_update_sender.as_ref().unwrap().clone();
+            self.player.sink.append(EmptyCallback::new(Box::new(move || {
+                //send Message::SongFinished to the update loop
+                _ = sender.clone().try_send(Message::SongFinished);
+            })));
         //if !self.player.next_appended {self.player.current_song = Some(song);}
             
         }
