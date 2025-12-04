@@ -3,7 +3,7 @@ use std::{env, fs::{self, File}, io::Write, path::PathBuf, sync::LazyLock};
 use toml_edit::DocumentMut;
 
 const DEFAULT_LIB_PATH: &str = "./";
-const DEFAULT_IMG_SIZE: u32 = 120;
+const DEFAULT_IMAGE_SIZE: u32 = 120;
 const DEFAULT_STRIP_REMASTERED: bool = false;
 
 const DEFAULT_DP_ENABLED: bool = false;
@@ -17,7 +17,7 @@ pub const DEFAULT_WS_PORT: u16 = 31466;
 const DEFAULT_CFG: LazyLock<String> = LazyLock::new(|| {
     format!(r#"[library]
 path="{DEFAULT_LIB_PATH}"
-image_size="{DEFAULT_IMG_SIZE}"
+image_size="{DEFAULT_IMAGE_SIZE}"
 strip_remastered={DEFAULT_STRIP_REMASTERED}
 
 [websocket]
@@ -38,7 +38,7 @@ pub static PROGRAM_CFG: LazyLock<ProgramConfig> = LazyLock::new(|| {
 #[derive(Debug)]
 struct LibraryOptions {
     path: String,
-    imgsize: u32,
+    image_size: u32,
     strip_remastered: bool
 }
 
@@ -46,7 +46,7 @@ impl Default for LibraryOptions {
     fn default() -> Self {
         Self {
             path: String::from(DEFAULT_LIB_PATH),
-            imgsize: DEFAULT_IMG_SIZE,
+            image_size: DEFAULT_IMAGE_SIZE,
             strip_remastered: DEFAULT_STRIP_REMASTERED
         }
     }
@@ -135,7 +135,7 @@ impl ProgramConfig {
                             if let Some(path) = v.as_str() {config.library_opts.path = String::from(path)};
                         }
                     },
-                    "imgsize" => {
+                    "image_size" => {
                         if v.is_integer() {
                             let mut v = v.as_integer().unwrap();
                             if v < 20 {
@@ -145,7 +145,7 @@ impl ProgramConfig {
                                     v = 300;
                                 }
                             }
-                            config.library_opts.imgsize = v as u32;
+                            config.library_opts.image_size = v as u32;
                         }
                     },
                     "strip_remastered" => {
@@ -209,8 +209,8 @@ impl ProgramConfig {
         &self.library_opts.path
     }
 
-    pub fn img_size(&self) -> u32 {
-        self.library_opts.imgsize
+    pub fn image_size(&self) -> u32 {
+        self.library_opts.image_size
     }
 
     pub fn strip_remastered(&self) -> bool {

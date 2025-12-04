@@ -396,14 +396,14 @@ pub struct App {
 impl App {
     fn new() -> Self {
 
-    let img_size = PROGRAM_CFG.img_size();
+    let image_size = PROGRAM_CFG.image_size();
 
-        let mut lib = music_library::scan_library(PROGRAM_CFG.library_path(), img_size);
+        let mut lib = music_library::scan_library(PROGRAM_CFG.library_path(), image_size);
         let stream_handle = rodio::OutputStreamBuilder::open_default_stream().unwrap();
         let sink = rodio::Sink::connect_new(stream_handle.mixer());
         sink.pause();
 
-        let size = (img_size*img_size) as usize;
+        let size = (image_size*image_size) as usize;
         let mut blank_img: Vec<u8> = Vec::with_capacity(size);
         //blank image bytes rgba(0,0,0,255)
         for _ in 0..size {
@@ -417,8 +417,8 @@ impl App {
         let mut ih = AHashMap::new();
         for (key, info) in lib.get_all_albums().iter_mut() {
             let h = image::Handle::from_rgba(
-                img_size, 
-                img_size,
+                image_size, 
+                image_size,
                 match &info.artwork {
                     Some(art) => art.clone(),
                     None => {
