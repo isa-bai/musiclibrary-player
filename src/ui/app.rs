@@ -1036,8 +1036,20 @@ impl App {
                 _ = self.discord_sender.as_ref().unwrap().clone()
                 .try_send(DiscordMessage::SetPresence((PresenceData {
                     artist: self.player.current_song.as_ref().unwrap().artists.join(" / "),
-                    song_title: self.player.current_song.as_ref().unwrap().title.to_owned(),
-                    album_title: self.player.current_song.as_ref().unwrap().album_title.to_owned(),
+                    song_title: {
+                        let mut title = self.player.current_song.as_ref().unwrap().title.to_owned();
+                        if PROGRAM_CFG.strip_remastered() {
+                            title = title.trim_end_matches("(Remastered)").trim_end_matches("(Remaster)").to_owned();
+                        }
+                        title
+                    },
+                    album_title: {
+                        let mut title = self.player.current_song.as_ref().unwrap().album_title.to_owned();
+                        if PROGRAM_CFG.strip_remastered() {
+                            title = title.trim_end_matches("(Remastered)").trim_end_matches("(Remaster)").to_owned();
+                        }
+                        title
+                    },
                     album_artist: self.player.current_song.as_ref().unwrap().artists[0].to_owned(),
                     current_pos: self.player.sink.get_pos().as_secs(),
                     song_duration: self.player.current_song.as_ref().unwrap().duration.as_secs(),
@@ -1084,9 +1096,21 @@ impl App {
                             let b64img = format!("{}{}", "data:image/png;base64,", BASE64_STANDARD.encode(buffer.into_inner()));
                             _ = self.websocket_sender.as_ref().unwrap().clone()
                                 .try_send(WebsocketMessage::UpdateSongData(SongData {
-                                    title: self.player.current_song.as_ref().unwrap_or(&Song::default()).title.clone(),
+                                    title: {
+                                        let mut title = self.player.current_song.as_ref().unwrap_or(&Song::default()).title.clone();
+                                        if PROGRAM_CFG.strip_remastered() {
+                                            title = title.trim_end_matches("(Remastered)").trim_end_matches("(Remaster)").to_owned();
+                                        }
+                                        title
+                                    },
                                     artist: self.player.current_song.as_ref().unwrap_or(&Song::default()).artists.join(" / "),
-                                    album: self.player.current_song.as_ref().unwrap_or(&Song::default()).album_title.clone(),
+                                    album: {
+                                        let mut title = self.player.current_song.as_ref().unwrap_or(&Song::default()).album_title.clone();
+                                        if PROGRAM_CFG.strip_remastered() {
+                                            title = title.trim_end_matches("(Remastered)").trim_end_matches("(Remaster)").to_owned();
+                                        }
+                                        title
+                                    },
                                     b64img: b64img,
                                     clear: None
                                 }));

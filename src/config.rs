@@ -4,6 +4,7 @@ use toml_edit::DocumentMut;
 
 const DEFAULT_LIB_PATH: &str = "./";
 const DEFAULT_IMG_SIZE: u32 = 120;
+const DEFAULT_STRIP_REMASTERED: bool = false;
 
 const DEFAULT_DP_ENABLED: bool = false;
 pub const DEFAULT_DP_CLIENTID: &str = "1354688246654697712";
@@ -16,7 +17,8 @@ pub const DEFAULT_WS_PORT: u16 = 31466;
 const DEFAULT_CFG: LazyLock<String> = LazyLock::new(|| {
     format!(r#"[library]
 path="{DEFAULT_LIB_PATH}"
-imgsize="{DEFAULT_IMG_SIZE}"
+image_size="{DEFAULT_IMG_SIZE}"
+strip_remastered={DEFAULT_STRIP_REMASTERED}
 
 [websocket]
 enabled={DEFAULT_WS_ENABLED}
@@ -34,31 +36,18 @@ pub static PROGRAM_CFG: LazyLock<ProgramConfig> = LazyLock::new(|| {
 
 
 #[derive(Debug)]
-struct DiscordOptions {
-    enabled: bool,
-    client_id: String
-}
-
-impl Default for DiscordOptions {
-    fn default() -> Self {
-        Self { 
-            enabled: DEFAULT_DP_ENABLED,
-            client_id: String::from(DEFAULT_DP_CLIENTID)
-        }
-    }
-}
-
-#[derive(Debug)]
 struct LibraryOptions {
     path: String,
-    imgsize: u32
+    imgsize: u32,
+    strip_remastered: bool
 }
 
 impl Default for LibraryOptions {
     fn default() -> Self {
         Self {
             path: String::from(DEFAULT_LIB_PATH),
-            imgsize: 120
+            imgsize: DEFAULT_IMG_SIZE,
+            strip_remastered: DEFAULT_STRIP_REMASTERED
         }
     }
 }
@@ -74,6 +63,21 @@ impl Default for WebsocketOptions {
         Self {
             enabled: DEFAULT_WS_ENABLED,
             port: DEFAULT_WS_PORT
+        }
+    }
+}
+
+#[derive(Debug)]
+struct DiscordOptions {
+    enabled: bool,
+    client_id: String
+}
+
+impl Default for DiscordOptions {
+    fn default() -> Self {
+        Self { 
+            enabled: DEFAULT_DP_ENABLED,
+            client_id: String::from(DEFAULT_DP_CLIENTID)
         }
     }
 }
@@ -144,6 +148,11 @@ impl ProgramConfig {
                             config.library_opts.imgsize = v as u32;
                         }
                     },
+                    "strip_remastered" => {
+                        if v.is_bool() {
+                            if let Some(strip) = v.as_bool() {config.library_opts.strip_remastered = strip};
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -202,6 +211,10 @@ impl ProgramConfig {
 
     pub fn img_size(&self) -> u32 {
         self.library_opts.imgsize
+    }
+
+    pub fn strip_remastered(&self) -> bool {
+        self.library_opts.strip_remastered
     }
 
     pub fn discord_rp_enabled(&self) -> bool {

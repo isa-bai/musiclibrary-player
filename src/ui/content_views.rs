@@ -205,16 +205,18 @@ pub fn songs_page(_app: &App) -> Element<'_, Message> {
 }
 
 pub fn settings_page(app: &App) -> Element<'_, Message> {
-    container(row![
-        text("Theme: ")
-        .shaping(text::Shaping::Advanced)
-        .height(28)
-        .size(14)
-        .align_y(Alignment::Center),
-        pick_list(Theme::ALL, Some(&app.theme), Message::ThemeChanged)
-        .width(Shrink)
-        .text_size(14)
-    ].height(28)).width(Fill)
+    container(
+        row![
+            text("Theme: ")
+            .shaping(text::Shaping::Advanced)
+            .height(28)
+            .size(14)
+            .align_y(Alignment::Center),
+            pick_list(Theme::ALL, Some(&app.theme), Message::ThemeChanged)
+            .width(Shrink)
+            .text_size(14)
+        ].height(28)
+    ).width(Fill)
     .height(Fill)
     .padding(10).into()
 }

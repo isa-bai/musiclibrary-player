@@ -2671,13 +2671,11 @@ version = "0.1.0"
 dependencies = [
  "ahash",
  "base64",
- "crossbeam-channel",
  "discord-rich-presence",
  "futures-util",
  "iced",
  "image",
  "jwalk",
- "openssl",
  "reqwest",
  "rodio",
  "serde",
