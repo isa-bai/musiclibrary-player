@@ -17,7 +17,7 @@ pub const DEFAULT_WS_PORT: u16 = 31466;
 const DEFAULT_CFG: LazyLock<String> = LazyLock::new(|| {
     format!(r#"[library]
 path="{DEFAULT_LIB_PATH}"
-image_size="{DEFAULT_IMAGE_SIZE}"
+image_size={DEFAULT_IMAGE_SIZE}
 strip_remastered={DEFAULT_STRIP_REMASTERED}
 
 [websocket]
